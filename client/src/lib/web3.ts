@@ -1,11 +1,12 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import { CoinbaseWalletSDK } from "@coinbase/wallet-sdk";
+import type { CoinbaseWalletProvider } from "@coinbase/wallet-sdk";
 
 interface Web3ContextType {
   account: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
-  provider: any;
+  provider: CoinbaseWalletProvider | null;
 }
 
 const Web3Context = createContext<Web3ContextType>({
@@ -15,18 +16,24 @@ const Web3Context = createContext<Web3ContextType>({
   provider: null,
 });
 
-export function Web3Provider({ children }: { children: React.ReactNode }) {
+interface Web3ProviderProps {
+  children: React.ReactNode;
+}
+
+export function Web3Provider({ children }: Web3ProviderProps) {
   const [account, setAccount] = useState<string | null>(null);
-  const [provider, setProvider] = useState<any>(null);
-  
+  const [provider, setProvider] = useState<CoinbaseWalletProvider | null>(null);
+
   const coinbaseWallet = new CoinbaseWalletSDK({
     appName: "cbBTC Swap",
     appLogoUrl: "",
-    darkMode: false,
   });
 
   useEffect(() => {
-    const ethereum = coinbaseWallet.makeWeb3Provider("https://base.blockpi.network/v1/rpc/public", 8453);
+    const ethereum = coinbaseWallet.makeWeb3Provider(
+      "https://base.blockpi.network/v1/rpc/public",
+      8453
+    );
     setProvider(ethereum);
   }, []);
 
@@ -34,7 +41,9 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
     try {
       if (!provider) return;
       const accounts = await provider.request({ method: "eth_requestAccounts" });
-      setAccount(accounts[0]);
+      if (Array.isArray(accounts) && accounts[0]) {
+        setAccount(accounts[0]);
+      }
     } catch (error) {
       console.error("Connection error:", error);
     }
@@ -46,7 +55,14 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <Web3Context.Provider value={{ account, connect, disconnect, provider }}>
+    <Web3Context.Provider 
+      value={{ 
+        account, 
+        connect, 
+        disconnect, 
+        provider 
+      }}
+    >
       {children}
     </Web3Context.Provider>
   );
