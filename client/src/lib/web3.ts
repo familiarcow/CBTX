@@ -55,14 +55,7 @@ export function Web3Provider({ children }: Web3ProviderProps) {
   };
 
   return (
-    <Web3Context.Provider 
-      value={{ 
-        account, 
-        connect, 
-        disconnect, 
-        provider 
-      }}
-    >
+    <Web3Context.Provider value={{account, connect, disconnect, provider}}>
       {children}
     </Web3Context.Provider>
   );
