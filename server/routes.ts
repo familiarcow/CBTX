@@ -1,11 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { log } from "./vite";
 
 export function registerRoutes(app: Express): Server {
-  // put application routes here
-  // prefix all routes with /api
+  // Test endpoint
+  app.get('/api/test', (_req, res) => {
+    log('Test endpoint hit');
+    res.json({ message: 'API is working' });
+  });
 
-  const httpServer = createServer(app);
-
-  return httpServer;
+  return createServer(app);
 }

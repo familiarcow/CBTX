@@ -3,6 +3,7 @@ import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer, createLogger } from "vite";
+import react from "@vitejs/plugin-react";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import { type Server } from "http";
@@ -11,18 +12,14 @@ import { nanoid } from "nanoid";
 
 const viteLogger = createLogger();
 
-export function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-
-  console.log(`${formattedTime} [${source}] ${message}`);
+export function log(message: string, ...args: any[]) {
+  console.log(`[server] ${message}`, ...args);
 }
 
 export async function setupVite(app: Express, server: Server) {
+  // Log the environment variable (for debugging)
+  log('BASESCAN_API_KEY present:', Boolean(process.env.BASESCAN_API_KEY));
+
   const vite = await createViteServer({
     ...viteConfig,
     configFile: false,
@@ -35,9 +32,18 @@ export async function setupVite(app: Express, server: Server) {
     },
     server: {
       middlewareMode: true,
-      hmr: { server },
+      hmr: {
+        server,
+        port: 24678, // Default HMR port
+        protocol: 'ws'
+      },
     },
     appType: "custom",
+    plugins: [react()],
+    envPrefix: 'VITE_',
+    define: {
+      'import.meta.env.VITE_BASESCAN_API_KEY': JSON.stringify(process.env.BASESCAN_API_KEY)
+    }
   });
 
   app.use(vite.middlewares);
@@ -62,6 +68,8 @@ export async function setupVite(app: Express, server: Server) {
       next(e);
     }
   });
+
+  return vite;
 }
 
 export function serveStatic(app: Express) {
