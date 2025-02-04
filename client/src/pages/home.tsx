@@ -376,8 +376,8 @@ export default function Home() {
                 <CardContent className="flex flex-col items-center justify-center p-8">
                   <div className="mb-8 flex flex-col items-center">
                     <h1 className="text-4xl font-bold mb-4 text-gray-900">
-                      From{" "}
                       <span className="inline-flex items-center">
+                      From{" "}
                         <img src={baseLogo} alt="Base" className="h-8 w-8 mx-2" />
                         Base
                       </span>
@@ -389,9 +389,6 @@ export default function Home() {
                     </h1>
                   </div>
                   <WalletConnect />
-                  <p className="text-sm text-gray-500 mt-4">
-                    Connect your wallet to get started
-                  </p>
                 </CardContent>
               )}
             </Card>
