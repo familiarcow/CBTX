@@ -66,16 +66,8 @@ export default function Home() {
   });
 
   const settingsSchema = z.object({
-    slippageBps: z.string()
-      .transform(Number)
-      .refine(val => val >= 0 && val <= 20, {
-        message: "Slippage must be between 0% and 20%"
-      }),
-    streamingInterval: z.string()
-      .transform(Number)
-      .refine(val => val >= 1 && val <= 10, {
-        message: "Streaming interval must be between 1 and 10 blocks"
-      }),
+    slippageBps: z.coerce.number().min(0).max(20).transform(String),
+    streamingInterval: z.coerce.number().min(1).max(10).transform(String),
   });
 
   type SettingsValues = z.infer<typeof settingsSchema>;
@@ -488,6 +480,24 @@ export default function Home() {
                     <CardHeader className="bg-white/50">
                       <div className="flex items-center justify-between">
                         <CardTitle>Swap</CardTitle>
+                        <div className="flex-1 flex items-center justify-center mx-4">
+                          {isSwapCollapsed && quote && (
+                            <div className="text-sm text-gray-500 text-center px-3 py-1.5 rounded-xl bg-gray-50">
+                              <div className="flex items-center gap-1">
+                                {(Number(quote.input_amount) / 1e8).toFixed(8)}{" "}
+                                <img 
+                                  src={selectedAsset === 'ETH' ? ethLogo : selectedAsset === 'USDC' ? usdcLogo : cbbtcLogo} 
+                                  alt={selectedAsset} 
+                                  className="h-4 w-4 inline" 
+                                />
+                                <span className="text-gray-400 mx-1">to</span>
+                                <span className="font-mono" title={quote.destination_address}>
+                                  {quote.destination_address.slice(0, 6)}...{quote.destination_address.slice(-6)}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2">
                           <Popover open={showSettings} onOpenChange={setShowSettings}>
                             <div className="flex items-center gap-2 text-sm">
@@ -601,9 +611,6 @@ export default function Home() {
                             onQuoteReceived={setQuote}
                             fromAsset={getAssetAddress(selectedAsset)}
                             settings={settings}
-                            onSettingsChange={setSettings}
-                            showSettings={showSettings}
-                            onShowSettingsChange={setShowSettings}
                           />
                         </CardContent>
                       )}
