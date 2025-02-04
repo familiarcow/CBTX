@@ -11,7 +11,7 @@ import { getInboundAddresses, calculateMinOutput, CBBTC_ADDRESS } from "@/lib/th
 import { motion } from "framer-motion";
 import { approveERC20, depositWithExpiry, getRouterAddress } from "@/lib/callcontract";
 import { LogoHeader } from "@/components/logo-header";
-import { Settings2, Package, ChevronDown, ChevronUp } from "lucide-react";
+import { Settings2, Package, ChevronDown, ChevronUp, ArrowUpRight } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -313,14 +313,6 @@ export default function Home() {
               description: (
                 <div className="space-y-2">
                   <p>Transaction hash: {hash.slice(0, 6)}...{hash.slice(-4)}</p>
-                  <a 
-                    href={`https://track.ninerealms.com/${thorchainTxId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:text-blue-700 underline"
-                  >
-                    Track Swap
-                  </a>
                   <p>Estimated time: {formatTime(quote.total_swap_seconds)}</p>
                 </div>
               ),
@@ -329,38 +321,8 @@ export default function Home() {
           onReceipt: (receipt) => {
             toast({
               title: "Transaction Confirmed",
-              description: thorchainTxId ? (
-                <div className="space-y-2">
-                  <p>Your swap has been initiated on THORChain</p>
-                  <a 
-                    href={`https://track.ninerealms.com/${thorchainTxId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:text-blue-700 underline"
-                  >
-                    Track your swap
-                  </a>
-                  {swapCountdown !== null && swapCountdown > 0 && (
-                    <p>Estimated completion in: {formatTime(swapCountdown)}</p>
-                  )}
-                </div>
-              ) : "Your swap has been initiated on THORChain",
+              description: "Your swap has been initiated on THORChain",
             });
-          },
-          onConfirmation: ({ confirmations }) => {
-            if (confirmations === BigInt(1)) {
-              toast({
-                title: "First Confirmation Received",
-                description: thorchainTxId ? (
-                  <div className="space-y-2">
-                    <p>Your transaction is being processed</p>
-                    {swapCountdown !== null && swapCountdown > 0 && (
-                      <p>Estimated completion in: {formatTime(swapCountdown)}</p>
-                    )}
-                  </div>
-                ) : "Your transaction is being processed",
-              });
-            }
           },
           onError: (error) => {
             console.error('Transaction error:', error);
@@ -695,6 +657,45 @@ export default function Home() {
                                 : "Send Transaction"}
                           </Button>
                         </motion.div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
+
+                {thorchainTxId && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
+                      <CardHeader className="bg-white/50">
+                        <CardTitle>Transaction Status</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex flex-col gap-4 p-4 bg-gray-50 rounded-xl">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Transaction ID:</span>
+                            <span className="font-mono text-sm">{thorchainTxId}</span>
+                          </div>
+                          
+                          {swapCountdown !== null && swapCountdown > 0 && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-600">Estimated Time:</span>
+                              <span className="font-medium">{formatTime(swapCountdown)}</span>
+                            </div>
+                          )}
+
+                          <a 
+                            href={`https://track.ninerealms.com/${thorchainTxId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-[#0052FF] text-white rounded-lg hover:bg-[#0052FF]/90 transition-colors"
+                          >
+                            Track Swap
+                            <ArrowUpRight className="h-4 w-4" />
+                          </a>
+                        </div>
                       </CardContent>
                     </Card>
                   </motion.div>
