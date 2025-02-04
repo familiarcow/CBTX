@@ -12,6 +12,13 @@ import { motion } from "framer-motion";
 import { approveERC20, depositWithExpiry, getRouterAddress } from "@/lib/callcontract";
 import { LogoHeader } from "@/components/logo-header";
 
+// Import asset logos
+import btcLogo from '../../images/btc-logo.svg';
+import cbbtcLogo from '../../images/cbbtc-logo.svg';
+import ethLogo from '../../images/eth-logo.svg';
+import usdcLogo from '../../images/usd-coin-usdc-logo.svg';
+import baseLogo from '../../images/base-logo.svg';
+
 // Define supported assets
 const SUPPORTED_ASSETS = {
   ETH: {
@@ -240,7 +247,7 @@ export default function Home() {
             console.log('Transaction IDs:', {
               ethTxHash: hash,
               thorchainTxId,
-              runescanUrl: `https://runescan.io/tx/${thorchainTxId}`
+              trackerUrl: `https://track.ninerealms.com/${thorchainTxId}`
             });
 
             // Start the countdown
@@ -252,12 +259,12 @@ export default function Home() {
                 <div className="space-y-2">
                   <p>Transaction hash: {hash.slice(0, 6)}...{hash.slice(-4)}</p>
                   <a 
-                    href={`https://runescan.io/tx/${thorchainTxId}`}
+                    href={`https://track.ninerealms.com/${thorchainTxId}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-500 hover:text-blue-700 underline"
                   >
-                    View on Runescan
+                    Track Swap
                   </a>
                   <p>Estimated time: {formatTime(quote.total_swap_seconds)}</p>
                 </div>
@@ -271,12 +278,12 @@ export default function Home() {
                 <div className="space-y-2">
                   <p>Your swap has been initiated on THORChain</p>
                   <a 
-                    href={`https://runescan.io/tx/${thorchainTxId}`}
+                    href={`https://track.ninerealms.com/${thorchainTxId}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-500 hover:text-blue-700 underline"
                   >
-                    Track your swap on Runescan
+                    Track your swap
                   </a>
                   {swapCountdown !== null && swapCountdown > 0 && (
                     <p>Estimated completion in: {formatTime(swapCountdown)}</p>
@@ -317,7 +324,7 @@ export default function Home() {
       console.log('Transaction successful:', {
         receipt,
         thorchainTxId,
-        runescanUrl: thorchainTxId ? `https://runescan.io/tx/${thorchainTxId}` : null,
+        trackerUrl: thorchainTxId ? `https://track.ninerealms.com/${thorchainTxId}` : null,
         estimatedTimeRemaining: swapCountdown !== null ? formatTime(swapCountdown) : null
       });
 
@@ -349,15 +356,7 @@ export default function Home() {
           >
             <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/70 backdrop-blur-sm">
               <CardHeader className="bg-white/50">
-                <CardTitle className="text-2xl font-bold text-[#0052FF] flex items-center gap-2">
-                  <motion.span
-                    initial={{ scale: 0.9 }}
-                    animate={{ scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    Swap {selectedAsset} to BTC
-                  </motion.span>
-                </CardTitle>
+                <CardTitle className="text-2xl font-bold text-[#0052FF]">Swap</CardTitle>
               </CardHeader>
               {!account && (
                 <CardContent className="flex flex-col items-center justify-center p-8">
@@ -383,16 +382,22 @@ export default function Home() {
                     <CardContent className="grid gap-4 md:grid-cols-3">
                       <TokenBalance 
                         symbol="ETH" 
+                        logo={ethLogo}
+                        chainLogo={baseLogo}
                         isSelected={selectedAsset === 'ETH'}
                         onSelect={() => handleAssetSelect('ETH')}
                       />
                       <TokenBalance 
                         symbol="USDC" 
+                        logo={usdcLogo}
+                        chainLogo={baseLogo}
                         isSelected={selectedAsset === 'USDC'}
                         onSelect={() => handleAssetSelect('USDC')}
                       />
                       <TokenBalance 
                         symbol="cbBTC" 
+                        logo={cbbtcLogo}
+                        chainLogo={baseLogo}
                         isSelected={selectedAsset === 'cbBTC'}
                         onSelect={() => handleAssetSelect('cbBTC')}
                       />
@@ -431,13 +436,30 @@ export default function Home() {
                       <CardContent className="space-y-4">
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div className="text-gray-600 font-medium">Expected Output</div>
-                          <div className="font-semibold text-[#0052FF]">{formatBTCAmount(quote.expected_amount_out)} BTC</div>
+                          <div className="font-semibold text-[#0052FF] flex items-center gap-2">
+                            {formatBTCAmount(quote.expected_amount_out)}
+                            <img src={btcLogo} alt="BTC" className="h-4 w-4" />
+                          </div>
                           
                           <div className="text-gray-600 font-medium">Minimum Output</div>
-                          <div className="font-semibold text-orange-500">{formatBTCAmount(calculateMinOutput(quote.expected_amount_out, 300))} BTC</div>
+                          <div className="font-semibold text-orange-500 flex items-center gap-2">
+                            {formatBTCAmount(calculateMinOutput(quote.expected_amount_out, 300))}
+                            <img src={btcLogo} alt="BTC" className="h-4 w-4" />
+                          </div>
                           
                           <div className="text-gray-600 font-medium">Estimated Time</div>
-                          <div className="font-semibold">~{Math.ceil(quote.total_swap_seconds / 60)} minutes</div>
+                          <div className="font-semibold flex items-center gap-2">
+                            ~{Math.ceil(quote.total_swap_seconds / 60)} minutes
+                            <div className="flex items-center gap-2">
+                              <img 
+                                src={baseLogo} 
+                                alt="Base" 
+                                className="h-4 w-4" 
+                              />
+                              <span className="mx-1">→</span>
+                              <img src={btcLogo} alt="BTC" className="h-4 w-4" />
+                            </div>
+                          </div>
                         </div>
 
                         <motion.div

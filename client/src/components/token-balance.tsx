@@ -24,9 +24,11 @@ interface TokenBalanceProps {
   symbol: keyof typeof TOKEN_ADDRESSES;
   isSelected?: boolean;
   onSelect?: () => void;
+  logo?: string;
+  chainLogo?: string;
 }
 
-export function TokenBalance({ symbol, isSelected, onSelect }: TokenBalanceProps) {
+export function TokenBalance({ symbol, isSelected, onSelect, logo, chainLogo }: TokenBalanceProps) {
   const { data: config, isLoading: configLoading } = useConfig();
   const { data: prices, isLoading: pricesLoading, isError: pricesError } = useUSDValues();
   const { account } = useWeb3();
@@ -138,7 +140,19 @@ export function TokenBalance({ symbol, isSelected, onSelect }: TokenBalanceProps
       onClick={onSelect}
     >
       <CardContent className="p-6">
-        <div className="text-sm font-medium text-gray-600 mb-2">{symbol}</div>
+        <div className="flex items-center gap-2 mb-2">
+          <div className="relative">
+            <img src={logo} alt={symbol} className="h-6 w-6" />
+            {chainLogo && (
+              <img 
+                src={chainLogo} 
+                alt="chain" 
+                className="h-4 w-4 absolute -bottom-1 -right-1"
+              />
+            )}
+          </div>
+          <span className="text-sm font-medium text-gray-600">{symbol}</span>
+        </div>
         {loading ? (
           <Skeleton className="h-6 w-24 mt-1" />
         ) : error ? (
