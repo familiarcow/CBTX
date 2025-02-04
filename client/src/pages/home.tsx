@@ -667,34 +667,49 @@ export default function Home() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.3 }}
+                    className="mt-6"
                   >
-                    <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
-                      <CardHeader className="bg-white/50">
-                        <CardTitle>Transaction Status</CardTitle>
+                    <Card className="border border-gray-100 shadow-lg rounded-2xl overflow-hidden bg-white">
+                      <CardHeader className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100/50">
+                        <CardTitle className="text-lg font-semibold text-gray-800">Transaction Status</CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="flex flex-col gap-4 p-4 bg-gray-50 rounded-xl">
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-600">Transaction ID:</span>
-                            <span className="font-mono text-sm">{thorchainTxId}</span>
-                          </div>
-                          
-                          {swapCountdown !== null && swapCountdown > 0 && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-600">Estimated Time:</span>
-                              <span className="font-medium">{formatTime(swapCountdown)}</span>
+                      <CardContent className="p-6">
+                        <div className="space-y-6">
+                          <div className="rounded-xl bg-gray-50 p-4 border border-gray-100">
+                            <div className="space-y-4">
+                              <div className="flex flex-col gap-2">
+                                <span className="text-sm text-gray-500 font-medium">Transaction ID</span>
+                                <code className="font-mono text-sm bg-white px-3 py-2 rounded-lg border border-gray-200 text-gray-800">
+                                  {thorchainTxId}
+                                </code>
+                              </div>
+                              
+                              {swapCountdown !== null && swapCountdown > 0 && (
+                                <div className="flex flex-col gap-2">
+                                  <span className="text-sm text-gray-500 font-medium">Estimated Completion</span>
+                                  <div className="flex items-center gap-2 text-gray-800 font-medium">
+                                    <span>{formatTime(swapCountdown)}</span>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          )}
+                          </div>
 
-                          <a 
-                            href={`https://track.ninerealms.com/${thorchainTxId}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-2 px-4 py-2 bg-[#0052FF] text-white rounded-lg hover:bg-[#0052FF]/90 transition-colors"
+                          <motion.div
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            transition={{ duration: 0.2 }}
                           >
-                            Track Swap
-                            <ArrowUpRight className="h-4 w-4" />
-                          </a>
+                            <a 
+                              href={`https://track.ninerealms.com/${thorchainTxId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-[#F2A900] to-[#F4B721] hover:from-[#F4B721] hover:to-[#F2A900] text-white font-semibold rounded-xl shadow-md transition-all duration-300"
+                            >
+                              Track Swap
+                              <ArrowUpRight className="h-5 w-5" />
+                            </a>
+                          </motion.div>
                         </div>
                       </CardContent>
                     </Card>
