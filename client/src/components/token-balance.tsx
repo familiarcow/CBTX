@@ -160,7 +160,7 @@ export function TokenBalance({ symbol, isSelected, onSelect, logo, chainLogo }: 
         ) : (
           <div className="space-y-2">
             <div className="text-xl font-semibold text-gray-900">
-              {balance} {symbol}
+              {balance}
             </div>
             {pricesLoading ? (
               <Skeleton className="h-4 w-20" />
