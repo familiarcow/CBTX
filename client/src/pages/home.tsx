@@ -10,6 +10,7 @@ import type { QuoteResponse } from "@/lib/thorchain";
 import { getInboundAddresses, calculateMinOutput, CBBTC_ADDRESS } from "@/lib/thorchain";
 import { motion } from "framer-motion";
 import { approveERC20, depositWithExpiry, getRouterAddress } from "@/lib/callcontract";
+import { LogoHeader } from "@/components/logo-header";
 
 // Define supported assets
 const SUPPORTED_ASSETS = {
@@ -336,137 +337,135 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-2xl mx-auto space-y-6"
-      >
-        <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
-          <CardHeader className="bg-white/50">
-            <CardTitle className="text-2xl font-bold text-[#0052FF] flex items-center gap-2">
-              <motion.span
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                Swap {selectedAsset} to BTC
-              </motion.span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <WalletConnect />
-          </CardContent>
-        </Card>
-
-        {account ? (
-          <>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
-                <CardHeader className="bg-white/50">
-                  <CardTitle>Your Balances</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-3">
-                  <TokenBalance 
-                    symbol="ETH" 
-                    isSelected={selectedAsset === 'ETH'}
-                    onSelect={() => handleAssetSelect('ETH')}
-                  />
-                  <TokenBalance 
-                    symbol="USDC" 
-                    isSelected={selectedAsset === 'USDC'}
-                    onSelect={() => handleAssetSelect('USDC')}
-                  />
-                  <TokenBalance 
-                    symbol="cbBTC" 
-                    isSelected={selectedAsset === 'cbBTC'}
-                    onSelect={() => handleAssetSelect('cbBTC')}
-                  />
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
-                <CardHeader className="bg-white/50">
-                  <CardTitle>Swap</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <SwapForm 
-                    onQuoteReceived={setQuote}
-                    fromAsset={getAssetAddress(selectedAsset)}
-                  />
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {quote && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
-                  <CardHeader className="bg-white/50">
-                    <CardTitle>Swap Quote Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="text-gray-600 font-medium">Expected Output</div>
-                      <div className="font-semibold text-[#0052FF]">{formatBTCAmount(quote.expected_amount_out)} BTC</div>
-                      
-                      <div className="text-gray-600 font-medium">Minimum Output</div>
-                      <div className="font-semibold text-orange-500">{formatBTCAmount(calculateMinOutput(quote.expected_amount_out, 300))} BTC</div>
-                      
-                      <div className="text-gray-600 font-medium">Estimated Time</div>
-                      <div className="font-semibold">~{Math.ceil(quote.total_swap_seconds / 60)} minutes</div>
-                    </div>
-
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Button
-                        onClick={handleTransaction}
-                        disabled={isApproving || isSending}
-                        className="w-full bg-gradient-to-r from-[#F2A900] to-[#F4B721] hover:from-[#F4B721] hover:to-[#F2A900] text-white font-semibold py-6 rounded-xl shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isApproving 
-                          ? "Approving..." 
-                          : isSending 
-                            ? "Sending Transaction..." 
-                            : "Send Transaction"}
-                      </Button>
-                    </motion.div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-          </>
-        ) : (
-          <motion.div
+    <div className="min-h-screen relative overflow-hidden bg-white">
+      <div className="relative">
+        <LogoHeader />
+        <div className="p-4 md:p-8">
+          <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-2xl mx-auto space-y-6"
           >
-            <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
-              <CardContent className="p-8 text-center text-gray-500">
-                Please connect your wallet to view balances
-              </CardContent>
+            <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/70 backdrop-blur-sm">
+              <CardHeader className="bg-white/50">
+                <CardTitle className="text-2xl font-bold text-[#0052FF] flex items-center gap-2">
+                  <motion.span
+                    initial={{ scale: 0.9 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    Swap {selectedAsset} to BTC
+                  </motion.span>
+                </CardTitle>
+              </CardHeader>
+              {!account && (
+                <CardContent className="flex flex-col items-center justify-center p-8">
+                  <WalletConnect />
+                  <p className="text-sm text-gray-500 mt-4">
+                    Connect your wallet to get started
+                  </p>
+                </CardContent>
+              )}
             </Card>
+
+            {account ? (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                  <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
+                    <CardHeader className="bg-white/50">
+                      <CardTitle>Your Balances</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 md:grid-cols-3">
+                      <TokenBalance 
+                        symbol="ETH" 
+                        isSelected={selectedAsset === 'ETH'}
+                        onSelect={() => handleAssetSelect('ETH')}
+                      />
+                      <TokenBalance 
+                        symbol="USDC" 
+                        isSelected={selectedAsset === 'USDC'}
+                        onSelect={() => handleAssetSelect('USDC')}
+                      />
+                      <TokenBalance 
+                        symbol="cbBTC" 
+                        isSelected={selectedAsset === 'cbBTC'}
+                        onSelect={() => handleAssetSelect('cbBTC')}
+                      />
+                    </CardContent>
+                  </Card>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                  <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
+                    <CardHeader className="bg-white/50">
+                      <CardTitle>Swap</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <SwapForm 
+                        onQuoteReceived={setQuote}
+                        fromAsset={getAssetAddress(selectedAsset)}
+                      />
+                    </CardContent>
+                  </Card>
+                </motion.div>
+
+                {quote && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
+                      <CardHeader className="bg-white/50">
+                        <CardTitle>Swap Quote Details</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="text-gray-600 font-medium">Expected Output</div>
+                          <div className="font-semibold text-[#0052FF]">{formatBTCAmount(quote.expected_amount_out)} BTC</div>
+                          
+                          <div className="text-gray-600 font-medium">Minimum Output</div>
+                          <div className="font-semibold text-orange-500">{formatBTCAmount(calculateMinOutput(quote.expected_amount_out, 300))} BTC</div>
+                          
+                          <div className="text-gray-600 font-medium">Estimated Time</div>
+                          <div className="font-semibold">~{Math.ceil(quote.total_swap_seconds / 60)} minutes</div>
+                        </div>
+
+                        <motion.div
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <Button
+                            onClick={handleTransaction}
+                            disabled={isApproving || isSending}
+                            className="w-full bg-gradient-to-r from-[#F2A900] to-[#F4B721] hover:from-[#F4B721] hover:to-[#F2A900] text-white font-semibold py-6 rounded-xl shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isApproving 
+                              ? "Approving..." 
+                              : isSending 
+                                ? "Sending Transaction..." 
+                                : "Send Transaction"}
+                          </Button>
+                        </motion.div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
+              </>
+            ) : null}
           </motion.div>
-        )}
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 }
