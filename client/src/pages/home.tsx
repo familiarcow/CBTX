@@ -436,6 +436,25 @@ export default function Home() {
 
             {account ? (
               <>
+                {account && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <a
+                      href={`https://basescan.org/address/${account}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-600 bg-white/90 backdrop-blur-sm rounded-xl border border-gray-200 hover:bg-white/95 transition-colors"
+                    >
+                      <img src={baseLogo} alt="Base" className="h-4 w-4" />
+                      {truncateAddress(account)}
+                      <span className="sr-only">View on Basescan</span>
+                    </a>
+                  </motion.div>
+                )}
+
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
