@@ -40,6 +40,7 @@ export interface QuoteResponse {
   streaming_swap_seconds: number;
   total_swap_seconds: number;
   input_amount: string;
+  destination_address: string;
 }
 
 export interface GetQuoteParams {
@@ -87,8 +88,9 @@ export const getSwapQuote = async ({
     // Update the memo with price limit
     data.memo = updateMemoWithPriceLimit(data.memo, data.expected_amount_out, slipTolerance);
     
-    // Add the input amount to the response
+    // Add the input amount and destination address to the response
     data.input_amount = amountInBaseUnits;
+    data.destination_address = destinationAddress;
     
     return data;
   } catch (error) {

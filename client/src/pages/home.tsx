@@ -11,6 +11,15 @@ import { getInboundAddresses, calculateMinOutput, CBBTC_ADDRESS } from "@/lib/th
 import { motion } from "framer-motion";
 import { approveERC20, depositWithExpiry, getRouterAddress } from "@/lib/callcontract";
 import { LogoHeader } from "@/components/logo-header";
+import { Settings2, Package, ChevronDown, ChevronUp } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormDescription } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { truncateAddress } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Import asset logos
 import btcLogo from '../../images/btc-logo.svg';
@@ -49,6 +58,48 @@ export default function Home() {
   const [selectedAsset, setSelectedAsset] = useState<SupportedAsset>('cbBTC');
   const [swapCountdown, setSwapCountdown] = useState<number | null>(null);
   const [thorchainTxId, setThorchainTxId] = useState<string | null>(null);
+  const [isSwapCollapsed, setIsSwapCollapsed] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState({
+    slippageBps: 3,
+    streamingInterval: 1
+  });
+
+  const settingsSchema = z.object({
+    slippageBps: z.string()
+      .transform(Number)
+      .refine(val => val >= 0 && val <= 20, {
+        message: "Slippage must be between 0% and 20%"
+      }),
+    streamingInterval: z.string()
+      .transform(Number)
+      .refine(val => val >= 1 && val <= 10, {
+        message: "Streaming interval must be between 1 and 10 blocks"
+      }),
+  });
+
+  type SettingsValues = z.infer<typeof settingsSchema>;
+
+  const settingsForm = useForm<SettingsValues>({
+    resolver: zodResolver(settingsSchema),
+    defaultValues: {
+      slippageBps: settings.slippageBps.toString(),
+      streamingInterval: settings.streamingInterval.toString(),
+    },
+  });
+
+  const onSettingsSubmit = (values: SettingsValues) => {
+    setSettings({
+      slippageBps: Number(values.slippageBps),
+      streamingInterval: Number(values.streamingInterval),
+    });
+    setShowSettings(false);
+    toast({
+      title: "Settings Updated",
+      description: `Slippage: ${values.slippageBps}%, Streaming Interval: ${values.streamingInterval}`,
+      className: "bg-white border border-gray-200 text-gray-900 shadow-lg",
+    });
+  };
 
   // Add countdown effect
   useEffect(() => {
@@ -88,6 +139,18 @@ export default function Home() {
     const btcAmount = Number(amount) / 1e8; // Convert from sats to BTC
     return btcAmount.toFixed(8);
   };
+
+  // Add effect for auto-scrolling and collapsing when quote is received
+  useEffect(() => {
+    if (quote) {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: 'smooth'
+      });
+      // Auto collapse when quote is received
+      setIsSwapCollapsed(true);
+    }
+  }, [quote]);
 
   const handleAssetSelect = (asset: SupportedAsset) => {
     setSelectedAsset(asset);
@@ -355,11 +418,22 @@ export default function Home() {
             className="max-w-2xl mx-auto space-y-6"
           >
             <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/70 backdrop-blur-sm">
-              <CardHeader className="bg-white/50">
-                <CardTitle className="text-2xl font-bold text-[#0052FF]">Swap</CardTitle>
-              </CardHeader>
               {!account && (
                 <CardContent className="flex flex-col items-center justify-center p-8">
+                  <div className="mb-8 flex flex-col items-center">
+                    <h1 className="text-4xl font-bold mb-4 text-gray-900">
+                      From{" "}
+                      <span className="inline-flex items-center">
+                        <img src={baseLogo} alt="Base" className="h-8 w-8 mx-2" />
+                        Base
+                      </span>
+                      {" "}→{" "}
+                      <span className="inline-flex items-center">
+                        <img src={btcLogo} alt="Bitcoin" className="h-8 w-8 mx-2" />
+                        Bitcoin
+                      </span>
+                    </h1>
+                  </div>
                   <WalletConnect />
                   <p className="text-sm text-gray-500 mt-4">
                     Connect your wallet to get started
@@ -412,14 +486,128 @@ export default function Home() {
                 >
                   <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
                     <CardHeader className="bg-white/50">
-                      <CardTitle>Swap</CardTitle>
+                      <div className="flex items-center justify-between">
+                        <CardTitle>Swap</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <Popover open={showSettings} onOpenChange={setShowSettings}>
+                            <div className="flex items-center gap-2 text-sm">
+                              <PopoverTrigger asChild>
+                                <motion.button 
+                                  whileHover={{ scale: 1.02 }}
+                                  whileTap={{ scale: 0.98 }}
+                                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-colors"
+                                >
+                                  <Settings2 className="h-4 w-4 text-gray-500" />
+                                  <span>{settings.slippageBps}%</span>
+                                </motion.button>
+                              </PopoverTrigger>
+                              <PopoverTrigger asChild>
+                                <motion.button 
+                                  whileHover={{ scale: 1.02 }}
+                                  whileTap={{ scale: 0.98 }}
+                                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-colors"
+                                >
+                                  <Package className="h-4 w-4 text-gray-500" />
+                                  <span>{settings.streamingInterval}</span>
+                                </motion.button>
+                              </PopoverTrigger>
+                            </div>
+                            <PopoverContent className="w-80 bg-white border-0 shadow-lg p-6 rounded-2xl">
+                              <Form {...settingsForm}>
+                                <form onSubmit={settingsForm.handleSubmit(onSettingsSubmit)} className="space-y-4">
+                                  <div className="font-medium text-lg pb-2 border-b">Swap Settings</div>
+                                  <FormField
+                                    control={settingsForm.control}
+                                    name="slippageBps"
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-3">
+                                        <FormLabel className="text-gray-700">Slippage Tolerance (%)</FormLabel>
+                                        <FormControl>
+                                          <Input 
+                                            {...field} 
+                                            type="number" 
+                                            step="0.1" 
+                                            min="0" 
+                                            max="20"
+                                            className="rounded-xl h-12 border-gray-200 focus-visible:ring-[#0052FF]" 
+                                          />
+                                        </FormControl>
+                                        <FormDescription className="text-gray-500 text-xs">
+                                          Any sub-swap executing at less than the quote less this % will be refunded
+                                        </FormDescription>
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={settingsForm.control}
+                                    name="streamingInterval"
+                                    render={({ field }) => (
+                                      <FormItem className="space-y-3">
+                                        <FormLabel className="text-gray-700">Streaming Interval</FormLabel>
+                                        <FormControl>
+                                          <Input 
+                                            {...field} 
+                                            type="number" 
+                                            min="1" 
+                                            max="10"
+                                            className="rounded-xl h-12 border-gray-200 focus-visible:ring-[#0052FF]" 
+                                          />
+                                        </FormControl>
+                                        <FormDescription className="text-gray-500 text-xs">
+                                          Number of blocks to wait between each streaming swap
+                                        </FormDescription>
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <motion.div
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                  >
+                                    <Button 
+                                      type="submit" 
+                                      className="w-full bg-[#0052FF] hover:bg-[#0052FF]/90 text-white rounded-xl h-12 font-medium shadow-md transition-all duration-200"
+                                    >
+                                      Save Settings
+                                    </Button>
+                                  </motion.div>
+                                </form>
+                              </Form>
+                            </PopoverContent>
+                          </Popover>
+                          <button
+                            onClick={() => setIsSwapCollapsed(!isSwapCollapsed)}
+                            className="text-gray-500 hover:text-gray-700 transition-colors text-xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+                          >
+                            {isSwapCollapsed ? '+' : '−'}
+                          </button>
+                        </div>
+                      </div>
                     </CardHeader>
-                    <CardContent>
-                      <SwapForm 
-                        onQuoteReceived={setQuote}
-                        fromAsset={getAssetAddress(selectedAsset)}
-                      />
-                    </CardContent>
+                    <motion.div
+                      initial={false}
+                      animate={{ 
+                        height: isSwapCollapsed ? 0 : "auto",
+                        opacity: isSwapCollapsed ? 0 : 1
+                      }}
+                      transition={{ 
+                        duration: 0.3,
+                        ease: "easeInOut"
+                      }}
+                      className="overflow-hidden"
+                    >
+                      {!isSwapCollapsed && (
+                        <CardContent>
+                          <SwapForm 
+                            onQuoteReceived={setQuote}
+                            fromAsset={getAssetAddress(selectedAsset)}
+                            settings={settings}
+                            onSettingsChange={setSettings}
+                            showSettings={showSettings}
+                            onShowSettingsChange={setShowSettings}
+                          />
+                        </CardContent>
+                      )}
+                    </motion.div>
                   </Card>
                 </motion.div>
 
@@ -431,16 +619,18 @@ export default function Home() {
                   >
                     <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
                       <CardHeader className="bg-white/50">
-                        <CardTitle>Swap Quote Details</CardTitle>
+                        <CardTitle>Quote</CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="text-gray-600 font-medium">Expected Output</div>
-                          <div className="font-semibold text-[#0052FF] flex items-center gap-2">
+                      <CardContent className="space-y-6">
+                        <div className="text-center p-4 bg-gray-50 rounded-xl">
+                          <div className="text-gray-600 font-medium mb-2">Expected Output</div>
+                          <div className="flex items-center justify-center gap-2 text-3xl font-bold text-[#0052FF]">
                             {formatBTCAmount(quote.expected_amount_out)}
-                            <img src={btcLogo} alt="BTC" className="h-4 w-4" />
+                            <img src={btcLogo} alt="BTC" className="h-6 w-6" />
                           </div>
-                          
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 text-sm">
                           <div className="text-gray-600 font-medium">Minimum Output</div>
                           <div className="font-semibold text-orange-500 flex items-center gap-2">
                             {formatBTCAmount(calculateMinOutput(quote.expected_amount_out, 300))}
