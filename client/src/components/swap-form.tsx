@@ -70,6 +70,8 @@ const ASSET_LOGOS: Record<string, string> = {
 interface Pool {
   asset: string;
   status: string;
+  balance_rune: string;
+  asset_tor_price: string;
 }
 
 const swapSchema = z.object({
@@ -128,19 +130,35 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
         const response = await fetch('https://thornode.ninerealms.com/thorchain/pools');
         const pools: Pool[] = await response.json();
         
+        // Sort pools by balance_rune descending
+        pools.sort((a, b) => {
+          const aBalance = BigInt(a.balance_rune || '0');
+          const bBalance = BigInt(b.balance_rune || '0');
+          return bBalance > aBalance ? 1 : bBalance < aBalance ? -1 : 0;
+        });
+        
         // Filter for available pools and create asset configs
         const assets = pools.reduce((acc, pool) => {
           const config = createAssetConfig(pool.asset, pool.status);
           if (config) {
+            // Add price information to the config
+            config.price = pool.asset_tor_price;
             acc[pool.asset] = config;
           }
           return acc;
         }, {} as Record<string, AssetConfig>);
 
-        // Add THOR.RUNE
-        assets['THOR.RUNE'] = parseAssetId('THOR.RUNE');
+        // Convert to array, add THOR.RUNE at position 10, then convert back to object
+        const assetEntries = Object.entries(assets);
+        const runeEntry: [string, AssetConfig] = ['THOR.RUNE', parseAssetId('THOR.RUNE')];
+        
+        // Insert THOR.RUNE at position 9 (will become 10th entry)
+        assetEntries.splice(9, 0, runeEntry);
+        
+        // Convert back to object
+        const orderedAssets = Object.fromEntries(assetEntries);
 
-        setDestinationAssets(assets);
+        setDestinationAssets(orderedAssets);
       } catch (error) {
         console.error('Failed to fetch pools:', error);
         toast({
@@ -251,19 +269,34 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
               <FormField
                 control={form.control}
                 name="amount"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel className="text-gray-700">Amount ({assetSymbol})</FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field} 
-                        type="number" 
-                        placeholder="0.0" 
-                        className="rounded-xl h-12 border-gray-200 focus-visible:ring-[#0052FF]"
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const amount = Number(field.value);
+                  const selectedAsset = form.watch('destinationAsset');
+                  const assetConfig = destinationAssets[selectedAsset];
+                  const price = assetConfig?.price ? Number(assetConfig.price) / 1e8 : 0;
+                  const usdValue = amount && price ? (amount * price).toFixed(2) : null;
+
+                  return (
+                    <FormItem className="space-y-3">
+                      <FormLabel className="text-gray-700">Amount ({assetSymbol})</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            {...field} 
+                            type="number" 
+                            placeholder="0.0" 
+                            className="rounded-xl h-12 border-gray-200 focus-visible:ring-[#0052FF] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          {usdValue && (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                              ≈ ${usdValue}
+                            </div>
+                          )}
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  );
+                }}
               />
             </motion.div>
 

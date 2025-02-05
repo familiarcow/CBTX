@@ -55,6 +55,7 @@ export interface AssetConfig {
   chain: string;
   logo?: string;
   chainLogo?: string;
+  price?: string;
 }
 
 /**
