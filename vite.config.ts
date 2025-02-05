@@ -35,9 +35,24 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        format: 'es',
+        entryFileNames: '[name].js',
+        chunkFileNames: '[name]-[hash].js',
+      }
+    }
   },
   esbuild: {
     loader: 'tsx',
     include: /\.[jt]sx?$/,
+  },
+  server: {
+    headers: {
+      'Content-Type': 'application/javascript'
+    },
+    fs: {
+      strict: true,
+    }
   }
 });
