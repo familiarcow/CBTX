@@ -1,15 +1,15 @@
 modules = ["nodejs-20", "web", "postgresql-16"]
-run = "cd client && npm run dev"
-entrypoint = "client/src/pages/index.tsx"
+run = "npm start"
+entrypoint = "index.js"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-22_11"
 
 [deployment]
-deploymentTarget = "static"
-build = ["npm", "run", "build"]
-publicDir = "client"
+deploymentTarget = "gce"
+build = ["sh", "-c", "npm run build"]
+run = ["sh", "-c", "npm start"]
 
 [workflows]
 runButton = "Project"
@@ -40,6 +40,7 @@ waitForPort = 5000
 
 [[ports]]
 localPort = 5000
+externalPort = 5000
 
 [[ports]]
 localPort = 5001
