@@ -20,6 +20,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { truncateAddress } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { getAssetLogo, parseAssetId, getChainLogo } from "@/lib/asset-utils";
 
 // Import asset logos
 import btcLogo from '../../images/btc-logo.svg';
@@ -53,6 +54,7 @@ export default function Home() {
   const { account, web3 } = useWeb3();
   const { toast } = useToast();
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
+  const [destinationAsset, setDestinationAsset] = useState<string>('BTC.BTC');
   const [isApproving, setIsApproving] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<SupportedAsset>('cbBTC');
@@ -144,6 +146,12 @@ export default function Home() {
     }
   }, [quote]);
 
+  // Force expand swap form when selected asset changes
+  useEffect(() => {
+    setIsSwapCollapsed(false);
+    setQuote(null); // Clear existing quote
+  }, [selectedAsset]);
+
   const handleAssetSelect = (asset: SupportedAsset) => {
     setSelectedAsset(asset);
     // Clear existing quote when asset changes
@@ -152,9 +160,8 @@ export default function Home() {
 
   const getAssetAddress = (asset: SupportedAsset) => {
     // Special case for ETH as it doesn't follow the same pattern
-    if (asset === 'ETH') {
+    if (asset === 'ETH') 
       return 'BASE.ETH';
-    }
     return `BASE.${asset}-${SUPPORTED_ASSETS[asset].address.toUpperCase()}`;
   };
 
@@ -316,12 +323,6 @@ export default function Home() {
                   <p>Estimated time: {formatTime(quote.total_swap_seconds)}</p>
                 </div>
               ),
-            });
-          },
-          onReceipt: (receipt) => {
-            toast({
-              title: "Transaction Confirmed",
-              description: "Your swap has been initiated on THORChain",
             });
           },
           onError: (error) => {
@@ -586,9 +587,13 @@ export default function Home() {
                       {!isSwapCollapsed && (
                         <CardContent>
                           <SwapForm 
-                            onQuoteReceived={setQuote}
+                            onQuoteReceived={(quote, destAsset) => {
+                              setQuote(quote);
+                              setDestinationAsset(destAsset);
+                            }}
                             fromAsset={getAssetAddress(selectedAsset)}
                             settings={settings}
+                            expanded={!isSwapCollapsed}
                           />
                         </CardContent>
                       )}
@@ -611,7 +616,18 @@ export default function Home() {
                           <div className="text-gray-600 font-medium mb-2">Expected Output</div>
                           <div className="flex items-center justify-center gap-2 text-3xl font-bold text-[#0052FF]">
                             {formatBTCAmount(quote.expected_amount_out)}
-                            <img src={btcLogo} alt="BTC" className="h-6 w-6" />
+                            <div className="relative">
+                              <img 
+                                src={getAssetLogo(destinationAsset, btcLogo)} 
+                                alt={parseAssetId(destinationAsset).name} 
+                                className="h-6 w-6"
+                              />
+                              <img 
+                                src={getChainLogo(parseAssetId(destinationAsset).chain)}
+                                alt={parseAssetId(destinationAsset).chain}
+                                className="h-4 w-4 absolute -bottom-1 -right-1"
+                              />
+                            </div>
                           </div>
                         </div>
 
@@ -619,20 +635,49 @@ export default function Home() {
                           <div className="text-gray-600 font-medium">Minimum Output</div>
                           <div className="font-semibold text-orange-500 flex items-center gap-2">
                             {formatBTCAmount(calculateMinOutput(quote.expected_amount_out, 300))}
-                            <img src={btcLogo} alt="BTC" className="h-4 w-4" />
+                            <div className="relative">
+                              <img 
+                                src={getAssetLogo(destinationAsset, btcLogo)} 
+                                alt={parseAssetId(destinationAsset).name} 
+                                className="h-4 w-4"
+                              />
+                              <img 
+                                src={getChainLogo(parseAssetId(destinationAsset).chain)}
+                                alt={parseAssetId(destinationAsset).chain}
+                                className="h-3 w-3 absolute -bottom-1 -right-1"
+                              />
+                            </div>
                           </div>
                           
                           <div className="text-gray-600 font-medium">Estimated Time</div>
                           <div className="font-semibold flex items-center gap-2">
                             ~{Math.ceil(quote.total_swap_seconds / 60)} minutes
                             <div className="flex items-center gap-2">
-                              <img 
-                                src={baseLogo} 
-                                alt="Base" 
-                                className="h-4 w-4" 
-                              />
+                              <div className="relative">
+                                <img 
+                                  src={getAssetLogo(getAssetAddress(selectedAsset), selectedAsset === 'ETH' ? ethLogo : selectedAsset === 'USDC' ? usdcLogo : cbbtcLogo)} 
+                                  alt={selectedAsset} 
+                                  className="h-4 w-4" 
+                                />
+                                <img 
+                                  src={getChainLogo(parseAssetId(getAssetAddress(selectedAsset)).chain)}
+                                  alt={parseAssetId(getAssetAddress(selectedAsset)).chain}
+                                  className="h-3 w-3 absolute -bottom-1 -right-1"
+                                />
+                              </div>
                               <span className="mx-1">→</span>
-                              <img src={btcLogo} alt="BTC" className="h-4 w-4" />
+                              <div className="relative">
+                                <img 
+                                  src={getAssetLogo(destinationAsset, btcLogo)} 
+                                  alt={parseAssetId(destinationAsset).name} 
+                                  className="h-4 w-4"
+                                />
+                                <img 
+                                  src={getChainLogo(parseAssetId(destinationAsset).chain)}
+                                  alt={parseAssetId(destinationAsset).chain}
+                                  className="h-3 w-3 absolute -bottom-1 -right-1"
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>

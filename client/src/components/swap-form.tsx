@@ -23,6 +23,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { 
+  type AssetConfig, 
+  createAssetConfig, 
+  parseAssetId 
+} from "@/lib/asset-utils";
 
 // Define logo mapping
 const ASSET_LOGOS: Record<string, string> = {
@@ -67,12 +72,6 @@ interface Pool {
   status: string;
 }
 
-interface AssetConfig {
-  name: string;
-  chain: string;
-  logo?: string;
-}
-
 const swapSchema = z.object({
   amount: z.string().min(1, "Amount is required"),
   destinationAddress: z.string().min(1, "Destination address is required"),
@@ -96,19 +95,30 @@ type SwapFormValues = z.infer<typeof swapSchema>;
 type SettingsValues = z.infer<typeof settingsSchema>;
 
 interface SwapFormProps {
-  onQuoteReceived?: (quote: QuoteResponse) => void;
+  onQuoteReceived?: (quote: QuoteResponse, destinationAsset: string) => void;
   fromAsset: string;
   settings: {
     slippageBps: number;
     streamingInterval: number;
   };
+  expanded?: boolean;
 }
 
-export function SwapForm({ onQuoteReceived, fromAsset, settings }: SwapFormProps) {
+export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true }: SwapFormProps) {
   const { toast } = useToast();
   const { provider } = useWeb3();
   const [loading, setLoading] = useState(false);
   const [destinationAssets, setDestinationAssets] = useState<Record<string, AssetConfig>>({});
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Reset form when fromAsset changes
+  useEffect(() => {
+    form.reset({
+      amount: "1",
+      destinationAddress: "",
+      destinationAsset: 'BTC.BTC',
+    });
+  }, [fromAsset]);
 
   // Fetch available pools from THORChain
   useEffect(() => {
@@ -119,22 +129,15 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings }: SwapFormProps
         
         // Filter for available pools and create asset configs
         const assets = pools.reduce((acc, pool) => {
-          if (pool.status === 'Available') {
-            acc[pool.asset] = {
-              name: pool.asset.split('.')[1].split('-')[0],
-              chain: pool.asset.split('.')[0],
-              logo: ASSET_LOGOS[pool.asset],
-            };
+          const config = createAssetConfig(pool.asset, pool.status);
+          if (config) {
+            acc[pool.asset] = config;
           }
           return acc;
         }, {} as Record<string, AssetConfig>);
 
         // Add THOR.RUNE
-        assets['THOR.RUNE'] = {
-          name: 'RUNE',
-          chain: 'THOR',
-          logo: ASSET_LOGOS['THOR.RUNE'],
-        };
+        assets['THOR.RUNE'] = parseAssetId('THOR.RUNE');
 
         setDestinationAssets(assets);
       } catch (error) {
@@ -173,8 +176,8 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings }: SwapFormProps
         streamingInterval: Number(settings.streamingInterval),
       });
 
-      // Call the callback with the quote data
-      onQuoteReceived?.(quote);
+      // Call the callback with both the quote data and destination asset
+      onQuoteReceived?.(quote, values.destinationAsset);
 
       // Get the asset name for display
       const assetConfig = destinationAssets[values.destinationAsset];
@@ -210,8 +213,8 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings }: SwapFormProps
     }
   }
 
-  // Extract asset symbol from fromAsset string (e.g., "BASE.CBBTC-0X..." -> "cbBTC")
-  const assetSymbol = fromAsset.split('.')[1].split('-')[0];
+  // Extract asset symbol from fromAsset string using the utility function
+  const { name: assetSymbol } = parseAssetId(fromAsset);
 
   return (
     <div className="space-y-6">
@@ -255,16 +258,23 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings }: SwapFormProps
                     <FormLabel className="text-gray-700">Destination Asset</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:ring-[#0052FF] bg-white/90 backdrop-blur-sm">
+                        <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:ring-[#0052FF] bg-white/90 backdrop-blur-sm pr-8">
                           <SelectValue placeholder="Select destination asset">
                             {field.value && destinationAssets[field.value] && (
                               <div className="flex items-center gap-2">
                                 {destinationAssets[field.value]?.logo && (
-                                  <img 
-                                    src={destinationAssets[field.value].logo} 
-                                    alt={destinationAssets[field.value].name}
-                                    className="h-5 w-5"
-                                  />
+                                  <div className="relative w-6 h-6">
+                                    <img 
+                                      src={destinationAssets[field.value].logo} 
+                                      alt={destinationAssets[field.value].name}
+                                      className="h-6 w-6"
+                                    />
+                                    <img 
+                                      src={destinationAssets[field.value].chainLogo} 
+                                      alt={destinationAssets[field.value].chain}
+                                      className="h-4 w-4 absolute -bottom-1 -right-1 rounded-full bg-white shadow-sm"
+                                    />
+                                  </div>
                                 )}
                                 <span className="font-medium">
                                   {destinationAssets[field.value].name}
@@ -287,7 +297,14 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings }: SwapFormProps
                             <div className="flex items-center justify-between w-full pr-6">
                               <div className="flex items-center gap-2">
                                 {asset.logo && (
-                                  <img src={asset.logo} alt={asset.name} className="h-5 w-5" />
+                                  <div className="relative w-6 h-6">
+                                    <img src={asset.logo} alt={asset.name} className="h-6 w-6" />
+                                    <img 
+                                      src={asset.chainLogo} 
+                                      alt={asset.chain}
+                                      className="h-4 w-4 absolute -bottom-1 -right-1 rounded-full bg-white shadow-sm"
+                                    />
+                                  </div>
                                 )}
                                 <span className="font-medium">{asset.name}</span>
                                 <span className="text-gray-500 text-sm">({asset.chain})</span>
@@ -321,8 +338,8 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings }: SwapFormProps
                   <FormItem className="space-y-3">
                     <FormLabel className="text-gray-700">
                       <div className="flex items-center gap-2">
-                        {assetConfig?.logo && (
-                          <img src={assetConfig.logo} alt={chain} className="h-5 w-5" />
+                        {assetConfig?.chainLogo && (
+                          <img src={assetConfig.chainLogo} alt={chain} className="h-5 w-5" />
                         )}
                         <span>{chain} Address</span>
                       </div>
@@ -338,6 +355,36 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings }: SwapFormProps
                 );
               }}
             />
+          </motion.div>
+
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Popover open={showSettings} onOpenChange={setShowSettings}>
+              <div className="flex items-center gap-2 text-sm">
+                <PopoverTrigger asChild>
+                  <button 
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-colors hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    <Settings2 className="h-4 w-4 text-gray-500" />
+                    <span>{settings.slippageBps}%</span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverTrigger asChild>
+                  <button 
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-colors hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    <Package className="h-4 w-4 text-gray-500" />
+                    <span>{settings.streamingInterval}</span>
+                  </button>
+                </PopoverTrigger>
+              </div>
+              <PopoverContent className="w-80 bg-white border-0 shadow-lg p-6 rounded-2xl">
+                {/* Settings content */}
+              </PopoverContent>
+            </Popover>
           </motion.div>
 
           <motion.div
