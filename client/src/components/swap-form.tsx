@@ -79,16 +79,16 @@ const swapSchema = z.object({
 });
 
 const settingsSchema = z.object({
-  slippageBps: z.string()
-    .transform(Number)
-    .refine(val => val >= 0 && val <= 20, {
-      message: "Slippage must be between 0% and 20%"
-    }),
-  streamingInterval: z.string()
-    .transform(Number)
-    .refine(val => val >= 1 && val <= 10, {
-      message: "Streaming interval must be between 1 and 10 blocks"
-    }),
+  slippageBps: z.coerce
+    .number()
+    .min(0)
+    .max(20)
+    .transform(val => Number(val)),
+  streamingInterval: z.coerce
+    .number()
+    .min(1)
+    .max(10)
+    .transform(val => Number(val)),
 });
 
 type SwapFormValues = z.infer<typeof swapSchema>;
@@ -102,9 +102,10 @@ interface SwapFormProps {
     streamingInterval: number;
   };
   expanded?: boolean;
+  onSettingsChange?: (settings: { slippageBps: number; streamingInterval: number }) => void;
 }
 
-export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true }: SwapFormProps) {
+export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true, onSettingsChange }: SwapFormProps) {
   const { toast } = useToast();
   const { provider } = useWeb3();
   const [loading, setLoading] = useState(false);
@@ -162,6 +163,14 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
     },
   });
 
+  const settingsForm = useForm<SettingsValues>({
+    resolver: zodResolver(settingsSchema),
+    defaultValues: {
+      slippageBps: settings.slippageBps,
+      streamingInterval: settings.streamingInterval,
+    },
+  });
+
   async function onSubmit(values: SwapFormValues) {
     if (!provider) return;
     
@@ -211,6 +220,19 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
     } finally {
       setLoading(false);
     }
+  }
+
+  async function onSettingsSubmit(values: SettingsValues) {
+    const newSettings = {
+      slippageBps: values.slippageBps,
+      streamingInterval: values.streamingInterval
+    };
+    onSettingsChange?.(newSettings);
+    setShowSettings(false);
+    toast({
+      title: "Settings Updated",
+      description: `Slippage: ${newSettings.slippageBps}%, Streaming Interval: ${newSettings.streamingInterval}`,
+    });
   }
 
   // Extract asset symbol from fromAsset string using the utility function
@@ -263,7 +285,7 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
                             {field.value && destinationAssets[field.value] && (
                               <div className="flex items-center gap-2">
                                 {destinationAssets[field.value]?.logo && (
-                                  <div className="relative w-6 h-6">
+                                  <div className="relative w-6 h-6 overflow-visible">
                                     <img 
                                       src={destinationAssets[field.value].logo} 
                                       alt={destinationAssets[field.value].name}
@@ -272,7 +294,7 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
                                     <img 
                                       src={destinationAssets[field.value].chainLogo} 
                                       alt={destinationAssets[field.value].chain}
-                                      className="h-4 w-4 absolute -bottom-1 -right-1 rounded-full bg-white shadow-sm"
+                                      className="h-4 w-4 absolute -bottom-1 -right-1 z-10"
                                     />
                                   </div>
                                 )}
@@ -292,24 +314,28 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
                           <SelectItem
                             key={key}
                             value={key}
-                            className="cursor-pointer py-2 px-4 focus:bg-blue-50 hover:bg-gray-50 relative"
+                            className="cursor-pointer py-2 px-4 focus:bg-blue-50 hover:bg-gray-50 relative overflow-visible"
                           >
                             <div className="flex items-center justify-between w-full pr-6">
                               <div className="flex items-center gap-2">
                                 {asset.logo && (
-                                  <div className="relative w-6 h-6">
+                                  <div className="relative w-6 h-6 overflow-visible">
                                     <img src={asset.logo} alt={asset.name} className="h-6 w-6" />
                                     <img 
                                       src={asset.chainLogo} 
                                       alt={asset.chain}
-                                      className="h-4 w-4 absolute -bottom-1 -right-1 rounded-full bg-white shadow-sm"
+                                      className="h-4 w-4 absolute -bottom-1 -right-1 z-10"
                                     />
                                   </div>
                                 )}
-                                <span className="font-medium">{asset.name}</span>
-                                <span className="text-gray-500 text-sm">({asset.chain})</span>
+                                <div className="flex items-center gap-1">
+                                  <span className="font-medium">{asset.name}</span>
+                                  <span className="text-gray-500 text-sm flex items-center gap-1">
+                                    ({asset.chain})
+                                    <Check className="h-4 w-4 text-green-500 opacity-0 data-[state=checked]:opacity-100" />
+                                  </span>
+                                </div>
                               </div>
-                              <Check className="h-4 w-4 text-green-500 opacity-0 data-[state=checked]:opacity-100 absolute right-4" />
                             </div>
                           </SelectItem>
                         ))}
@@ -355,36 +381,6 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
                 );
               }}
             />
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Popover open={showSettings} onOpenChange={setShowSettings}>
-              <div className="flex items-center gap-2 text-sm">
-                <PopoverTrigger asChild>
-                  <button 
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-colors hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    <Settings2 className="h-4 w-4 text-gray-500" />
-                    <span>{settings.slippageBps}%</span>
-                  </button>
-                </PopoverTrigger>
-                <PopoverTrigger asChild>
-                  <button 
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-colors hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    <Package className="h-4 w-4 text-gray-500" />
-                    <span>{settings.streamingInterval}</span>
-                  </button>
-                </PopoverTrigger>
-              </div>
-              <PopoverContent className="w-80 bg-white border-0 shadow-lg p-6 rounded-2xl">
-                {/* Settings content */}
-              </PopoverContent>
-            </Popover>
           </motion.div>
 
           <motion.div

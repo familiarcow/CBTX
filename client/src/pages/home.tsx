@@ -422,7 +422,7 @@ export default function Home() {
                 >
                   <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
                     <CardHeader className="bg-white/50">
-                      <CardTitle>Your Balances</CardTitle>
+                      <CardTitle>Balances</CardTitle>
                     </CardHeader>
                     <CardContent className="grid gap-4 md:grid-cols-3">
                       <TokenBalance 
@@ -481,24 +481,20 @@ export default function Home() {
                           <Popover open={showSettings} onOpenChange={setShowSettings}>
                             <div className="flex items-center gap-2 text-sm">
                               <PopoverTrigger asChild>
-                                <motion.button 
-                                  whileHover={{ scale: 1.02 }}
-                                  whileTap={{ scale: 0.98 }}
-                                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-colors"
+                                <button 
+                                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-colors hover:scale-[1.02] active:scale-[0.98]"
                                 >
                                   <Settings2 className="h-4 w-4 text-gray-500" />
                                   <span>{settings.slippageBps}%</span>
-                                </motion.button>
+                                </button>
                               </PopoverTrigger>
                               <PopoverTrigger asChild>
-                                <motion.button 
-                                  whileHover={{ scale: 1.02 }}
-                                  whileTap={{ scale: 0.98 }}
-                                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-colors"
+                                <button 
+                                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-colors hover:scale-[1.02] active:scale-[0.98]"
                                 >
                                   <Package className="h-4 w-4 text-gray-500" />
                                   <span>{settings.streamingInterval}</span>
-                                </motion.button>
+                                </button>
                               </PopoverTrigger>
                             </div>
                             <PopoverContent className="w-80 bg-white border-0 shadow-lg p-6 rounded-2xl">
@@ -594,6 +590,7 @@ export default function Home() {
                             fromAsset={getAssetAddress(selectedAsset)}
                             settings={settings}
                             expanded={!isSwapCollapsed}
+                            onSettingsChange={setSettings}
                           />
                         </CardContent>
                       )}
