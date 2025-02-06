@@ -1,11 +1,11 @@
 // Define logo mapping
 export const ASSET_LOGOS: Record<string, string> = {
-  'BTC.BTC': '/images/asset-logos/bitcoin-btc-logo.svg',
-  'ETH.ETH': '/images/asset-logos/ethereum-eth-logo.svg',
-  'BSC.BNB': '/images/asset-logos/binance-coin-bnb-logo.svg',
-  'BCH.BCH': '/images/asset-logos/bitcoin-cash-bch-logo.svg',
-  'LTC.LTC': '/images/asset-logos/litecoin-ltc-logo.svg',
-  'AVAX.AVAX': '/images/asset-logos/avalanche-avax-logo.svg',
+  'BTC.BTC': '../images/asset-logos/bitcoin-btc-logo.svg',
+  'ETH.ETH': '../images/asset-logos/ethereum-eth-logo.svg',
+  'BSC.BNB': '../images/asset-logos/binance-coin-bnb-logo.svg',
+  'BCH.BCH': '../images/asset-logos/bitcoin-cash-bch-logo.svg',
+  'LTC.LTC': '../images/asset-logos/litecoin-ltc-logo.svg',
+  'AVAX.AVAX': '../images/asset-logos/avalanche-avax-logo.svg',
   'GAIA.ATOM': '/images/asset-logos/cosmos-atom-logo.svg',
   'DOGE.DOGE': '/images/asset-logos/dogecoin-doge-logo.svg',
   'THOR.RUNE': '/images/asset-logos/RUNE-ICON.svg',
@@ -38,11 +38,11 @@ export const ASSET_LOGOS: Record<string, string> = {
 
 // Define chain logo mapping
 export const CHAIN_LOGOS: Record<string, string> = {
-  'BTC': '/images/chain-logos/BTC.svg',
-  'ETH': '/images/chain-logos/ETH.svg',
-  'BSC': '/images/chain-logos/BSC.svg',
-  'BCH': '/images/chain-logos/BCH.svg',
-  'LTC': '/images/chain-logos/LTC.svg',
+  'BTC': '../images/chain-logos/BTC.svg',
+  'ETH': '../images/chain-logos/ETH.svg',
+  'BSC': '../images/chain-logos/BSC.svg',
+  'BCH': '../images/chain-logos/BCH.svg',
+  'LTC': '../images/chain-logos/LTC.svg',
   'AVAX': '/images/chain-logos/AVAX.svg',
   'GAIA': '/images/chain-logos/GAIA.svg',
   'DOGE': '/images/chain-logos/DOGE.svg',
