@@ -19,7 +19,7 @@ if (process.env.NODE_ENV !== 'production') {
   });
 } else {
   // Serve static files in production
-  const distPath = path.resolve(__dirname, '../client/dist');
+  const distPath = path.resolve(__dirname, '../dist/public');
   app.use(express.static(distPath));
   
   // Register API routes
