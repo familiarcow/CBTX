@@ -1,7 +1,7 @@
 import express from "express";
-import { setupVite } from "./vite";
 import { createServer } from "http";
-import { log } from "./vite";
+import { log } from "./vite.js";
+import { setupVite } from "./vite.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import { registerRoutes } from "./routes";
