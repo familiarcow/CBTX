@@ -38,13 +38,12 @@ if (process.env.NODE_ENV !== 'production') {
     process.exit(1);
   });
 } else {
-  registerRoutes(app);
   log("Setting up production server...");
-  const distPath = path.resolve(__dirname, "../dist/public");
-
+  const distPath = path.resolve(__dirname, "../public");
+  
   // Serve static files first
   app.use(express.static(distPath));
-
+  
   // Register API routes
   registerRoutes(app);
 
