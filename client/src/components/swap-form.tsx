@@ -112,6 +112,7 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
   const { provider } = useWeb3();
   const [loading, setLoading] = useState(false);
   const [destinationAssets, setDestinationAssets] = useState<Record<string, AssetConfig>>({});
+  const [assetPrices, setAssetPrices] = useState<Record<string, string>>({});
   const [showSettings, setShowSettings] = useState(false);
 
   // Reset form when fromAsset changes
@@ -137,12 +138,17 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
           return bBalance > aBalance ? 1 : bBalance < aBalance ? -1 : 0;
         });
         
+        // Store prices separately
+        const prices = pools.reduce((acc, pool) => {
+          acc[pool.asset] = pool.asset_tor_price;
+          return acc;
+        }, {} as Record<string, string>);
+        setAssetPrices(prices);
+        
         // Filter for available pools and create asset configs
         const assets = pools.reduce((acc, pool) => {
           const config = createAssetConfig(pool.asset, pool.status);
           if (config) {
-            // Add price information to the config
-            config.price = pool.asset_tor_price;
             acc[pool.asset] = config;
           }
           return acc;
@@ -271,9 +277,7 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
                 name="amount"
                 render={({ field }) => {
                   const amount = Number(field.value);
-                  const selectedAsset = form.watch('destinationAsset');
-                  const assetConfig = destinationAssets[selectedAsset];
-                  const price = assetConfig?.price ? Number(assetConfig.price) / 1e8 : 0;
+                  const price = assetPrices[fromAsset] ? Number(assetPrices[fromAsset]) / 1e8 : 0;
                   const usdValue = amount && price ? (amount * price).toFixed(2) : null;
 
                   return (
