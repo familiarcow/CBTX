@@ -4,7 +4,8 @@
   "compilerOptions": {
     "module": "ESNext",
     "outDir": "./dist",
-    "noEmit": false
+    "noEmit": false,
+    "allowImportingTsExtensions": false
   },
   "include": ["server/**/*"],
   "exclude": ["client/**/*", "node_modules"]
