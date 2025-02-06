@@ -7,7 +7,7 @@ import Web3 from 'web3';
 const APP_NAME = 'cbBTC Swap';
 const APP_LOGO_URL = '';
 const DEFAULT_CHAIN_ID = 8453;
-const RPC_URL = 'https://base.blockpi.network/v1/rpc/public';
+const RPC_URL = 'https://mainnet.base.org';
 const APP_SUPPORTED_CHAIN_IDS = [DEFAULT_CHAIN_ID];
 
 // Base chain configuration
@@ -30,7 +30,7 @@ const coinbaseWallet = new CoinbaseWalletSDK({
 });
 
 // Initialize provider outside component with Base chain configuration
-const ethereum = coinbaseWallet.makeWeb3Provider(RPC_URL);
+const ethereum = coinbaseWallet.makeWeb3Provider();
 
 // Initialize Web3
 const web3 = new Web3(ethereum as any);
