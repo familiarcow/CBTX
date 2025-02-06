@@ -39,7 +39,7 @@ if (process.env.NODE_ENV !== 'production') {
   });
 } else {
   log("Setting up production server...");
-  const distPath = path.resolve(__dirname, '../client');
+  const distPath = path.resolve(__dirname, '../dist/public');
   app.use(express.static(distPath));
   
   registerRoutes(app);
