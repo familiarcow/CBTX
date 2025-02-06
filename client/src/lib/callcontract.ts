@@ -266,16 +266,7 @@ export async function depositWithExpiry(
       isNativeToken,
       originalAmount: amountToValidate,
       parsedAmount: amountBN.toString(),
-      isValid: amountBN > 0,
-      // For reference:
-      // ETH: 18 decimals
-      // USDC: 6 decimals
-      // cbBTC: 8 decimals
-      humanReadable: isNativeToken 
-        ? Number(amountBN) / 1e18  // ETH uses 18 decimals
-        : Number(amountBN) / (params.asset.toLowerCase() === '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913' 
-            ? 1e6   // USDC uses 6 decimals
-            : 1e8), // cbBTC uses 8 decimals
+      isValid: amountBN > 0
     });
     
     if (amountBN <= 0) {
@@ -293,16 +284,6 @@ export async function depositWithExpiry(
   // Calculate expiry (current time + 60 minutes in seconds)
   const expiry = Math.floor(Date.now() / 1000) + 60 * 60;
   console.log('Calculated expiry timestamp:', expiry);
-  
-  // Log the method parameters before estimation
-  console.log('Preparing to estimate gas for depositWithExpiry with params:', {
-    vault: params.vault,
-    asset: params.asset,
-    amount: params.amount,
-    value: params.value,
-    memo: params.memo,
-    expiry: expiry.toString()
-  });
 
   try {
     // Estimate gas for the transaction
@@ -322,17 +303,21 @@ export async function depositWithExpiry(
     console.log('Gas estimation successful:', gasEstimate);
 
     console.log('Getting gas price...');
-    const gasPrice = await web3.eth.getGasPrice();
-    console.log('Current gas price:', gasPrice);
+    const baseFeePerGas = await web3.eth.getGasPrice();
+    console.log('Current base fee:', baseFeePerGas);
 
-    // Calculate final gas values
-    const finalGas = Math.floor(Number(gasEstimate) * 1.2).toString();
-    const finalGasPrice = gasPrice.toString();
+    // Calculate gas parameters (Base chain specific)
+    const maxPriorityFeePerGas = web3.utils.toWei('0.001', 'gwei'); // 0.001 gwei priority fee
+    const maxFeePerGas = (BigInt(baseFeePerGas) + BigInt(maxPriorityFeePerGas)).toString();
+    
+    // Use a more conservative gas limit (10% buffer instead of 20%)
+    const finalGas = Math.floor(Number(gasEstimate) * 1.1).toString();
     
     console.log('Final transaction parameters:', {
       from: params.fromAddress,
       gas: finalGas,
-      gasPrice: finalGasPrice,
+      maxFeePerGas,
+      maxPriorityFeePerGas,
       value: params.value || '0'
     });
 
@@ -340,6 +325,7 @@ export async function depositWithExpiry(
     console.log('Preparing to send transaction...');
     return new Promise((resolve, reject) => {
       console.log('Creating transaction...');
+      
       const methodCall = routerContract.methods.depositWithExpiry(
         params.vault,
         params.asset,
@@ -360,7 +346,8 @@ export async function depositWithExpiry(
         encodedCall: methodCall.encodeABI(),
         from: params.fromAddress,
         gas: finalGas,
-        gasPrice: finalGasPrice,
+        maxFeePerGas,
+        maxPriorityFeePerGas,
         value: params.value || '0'
       });
 
@@ -368,16 +355,10 @@ export async function depositWithExpiry(
         .send({
           from: params.fromAddress,
           gas: finalGas,
-          gasPrice: finalGasPrice,
-          value: params.value || '0'
-        })
-        .on('sending', (payload: any) => {
-          console.log('Transaction sending:', payload);
-          callbacks?.onSending?.(payload);
-        })
-        .on('sent', (payload: any) => {
-          console.log('Transaction sent:', payload);
-          callbacks?.onSent?.(payload);
+          value: params.value || '0',
+          type: '0x2', // EIP-1559 transaction type
+          maxFeePerGas,
+          maxPriorityFeePerGas
         })
         .on('transactionHash', (hash: string) => {
           console.log('Transaction hash received:', hash);
@@ -387,10 +368,6 @@ export async function depositWithExpiry(
           console.log('Transaction receipt received:', receipt);
           callbacks?.onReceipt?.(receipt);
           resolve(receipt);
-        })
-        .on('confirmation', (params: { confirmations: bigint; receipt: TransactionReceipt; latestBlockHash: string }) => {
-          console.log('Confirmation received:', params);
-          callbacks?.onConfirmation?.(params);
         })
         .on('error', (error: any) => {
           console.error('Transaction error:', error);

@@ -32,26 +32,8 @@ const coinbaseWallet = new CoinbaseWalletSDK({
 // Initialize provider outside component with Base chain configuration
 const ethereum = coinbaseWallet.makeWeb3Provider();
 
-// Initialize Web3
+// Initialize Web3 with the provider
 const web3 = new Web3(ethereum as any);
-
-// Add RPC methods to provider
-if (ethereum) {
-  ethereum.request = async ({ method, params }: { method: string; params?: any[] }) => {
-    return new Promise((resolve, reject) => {
-      (ethereum as any).send(
-        { method, params: params || [] },
-        (error: any, response: any) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(response.result);
-          }
-        }
-      );
-    });
-  };
-}
 
 interface Web3ContextType {
   account: string | null;
@@ -85,11 +67,25 @@ export function Web3Provider({ children }: Web3ProviderProps) {
     if (web3Provider) {
       web3Provider.on('chainChanged', (newChainId: string) => {
         setChainId(parseInt(newChainId));
+        // Reinitialize web3 with the new chain
+        web3.setProvider(web3Provider);
+      });
+
+      // Handle account changes
+      web3Provider.on('accountsChanged', (accounts: string[]) => {
+        if (accounts[0]) {
+          setAccount(accounts[0]);
+          web3.eth.defaultAccount = accounts[0];
+        } else {
+          setAccount(null);
+          web3.eth.defaultAccount = undefined;
+        }
       });
     }
     return () => {
       if (web3Provider) {
         web3Provider.removeListener('chainChanged', () => {});
+        web3Provider.removeListener('accountsChanged', () => {});
       }
     };
   }, [web3Provider]);
@@ -138,6 +134,7 @@ export function Web3Provider({ children }: Web3ProviderProps) {
       
       if (Array.isArray(accounts) && accounts[0]) {
         setAccount(accounts[0]);
+        web3.eth.defaultAccount = accounts[0];
       }
     } catch (error) {
       console.error("Connection error:", error);
@@ -148,6 +145,7 @@ export function Web3Provider({ children }: Web3ProviderProps) {
   const disconnect = () => {
     setAccount(null);
     setChainId(null);
+    web3.eth.defaultAccount = undefined;
   };
 
   return (
