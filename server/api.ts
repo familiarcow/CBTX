@@ -23,6 +23,6 @@ app.get('/api/config', (_req, res) => {
 });
 
 const PORT = 5001;
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, () => {
   log(`API server running on port ${PORT}`);
 }); 

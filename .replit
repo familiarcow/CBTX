@@ -1,15 +1,14 @@
 modules = ["nodejs-20", "web", "postgresql-16"]
-run = "npm start"
-entrypoint = "index.js"
+run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
-channel = "stable-22_11"
+channel = "stable-24_05"
 
 [deployment]
-deploymentTarget = "gce"
-build = ["sh", "-c", "npm run build"]
-run = ["sh", "-c", "npm start"]
+deploymentTarget = "cloudrun"
+build = ["npm", "run", "build"]
+run = ["npm", "run", "start"]
 
 [workflows]
 runButton = "Project"
@@ -40,8 +39,8 @@ waitForPort = 5000
 
 [[ports]]
 localPort = 5000
-externalPort = 5000
+externalPort = 80
 
 [[ports]]
 localPort = 5001
-externalPort = 3001
+externalPort = 3000

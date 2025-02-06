@@ -12,8 +12,9 @@ const APP_SUPPORTED_CHAIN_IDS = [DEFAULT_CHAIN_ID];
 
 // Initialize outside component to prevent re-initialization
 const coinbaseWallet = new CoinbaseWalletSDK({
-  appName: "CBTX",
-  appLogoUrl: "@/images/coinbase_wallet_logo.png",
+  appName: APP_NAME,
+  appLogoUrl: APP_LOGO_URL,
+  darkMode: false
 });
 
 // Initialize provider outside component
@@ -44,7 +45,7 @@ interface Web3ProviderProps {
 
 export function Web3Provider({ children }: Web3ProviderProps) {
   const [account, setAccount] = useState<string | null>(null);
-  const [web3Provider, setWeb3Provider] = useState<any>(ethereum);
+  const [web3Provider, setWeb3Provider] = useState<CoinbaseWalletProvider | null>(ethereum);
 
   const connect = async () => {
     try {
