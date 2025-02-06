@@ -50,7 +50,7 @@ if (process.env.NODE_ENV !== 'production') {
   // Serve index.html for all other routes (SPA fallback)
   app.get("*", (_req: any, res: any) => {
     try {
-      res.sendFile(path.join(distPath, "index.html"), (err) => {
+      res.sendFile(path.join(distPath, "index.html"), (err: Error | null) => {
         if (err) {
           log(`Error sending index.html: ${err}`);
           res.status(500).send('Error loading application');
