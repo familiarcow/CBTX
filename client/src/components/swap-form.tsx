@@ -113,6 +113,7 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
   const [loading, setLoading] = useState(false);
   const [destinationAssets, setDestinationAssets] = useState<Record<string, AssetConfig>>({});
   const [assetPrices, setAssetPrices] = useState<Record<string, string>>({});
+  const [pricesLoading, setPricesLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
 
   // Reset form when fromAsset changes
@@ -127,6 +128,7 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
   // Fetch available pools from THORChain
   useEffect(() => {
     async function fetchPools() {
+      setPricesLoading(true);
       try {
         const response = await fetch('https://thornode.ninerealms.com/thorchain/pools');
         const pools: Pool[] = await response.json();
@@ -172,6 +174,8 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
           description: "Failed to fetch available pools",
           variant: "destructive",
         });
+      } finally {
+        setPricesLoading(false);
       }
     }
 
@@ -277,8 +281,18 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
                 name="amount"
                 render={({ field }) => {
                   const amount = Number(field.value);
-                  const price = assetPrices[fromAsset] ? Number(assetPrices[fromAsset]) / 1e8 : 0;
-                  const usdValue = amount && price ? (amount * price).toFixed(2) : null;
+                  const upperAsset = fromAsset.toUpperCase();
+                  const price = !pricesLoading && assetPrices[upperAsset] ? Number(assetPrices[upperAsset]) / 1e8 : 0;
+                  console.log('Asset Price Details:', {
+                    asset: fromAsset,
+                    upperAsset,
+                    pricesLoading,
+                    rawPrice: assetPrices[upperAsset],
+                    calculatedPrice: price,
+                    amount: amount,
+                    usdValue: amount * price
+                  });
+                  const usdValue = !pricesLoading && amount && price ? (amount * price).toFixed(2) : null;
 
                   return (
                     <FormItem className="space-y-3">
@@ -291,7 +305,11 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
                             placeholder="0.0" 
                             className="rounded-xl h-12 border-gray-200 focus-visible:ring-[#0052FF] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
-                          {usdValue && (
+                          {pricesLoading ? (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                              Loading price...
+                            </div>
+                          ) : usdValue && (
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
                               ≈ ${usdValue}
                             </div>
