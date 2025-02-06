@@ -1,0 +1,69 @@
+2025-02-06T20:19:08Z info: Deployment: 5fa9f132-f6ca-452b-a8c3-e868183fb4ff
+2025-02-06T20:19:08Z info: Build: a6c90788-e2a0-4d1a-b68f-cccd37ff61ff
+2025-02-06T20:19:08Z info: Connecting to builder
+2025-02-06T20:19:21Z info: Builder connected
+2025-02-06T20:19:22Z info: Installing packages
+--> npm install
+
+
+up to date, audited 548 packages in 6s
+
+2025-02-06T20:19:28Z info: Starting Build
+
+> rest-express@1.0.0 build
+> vite build && tsc --project tsconfig.server.json
+
+
+vite v5.4.10 building for production...
+
+transforming...
+
+✓ 2581 modules transformed.
+
+rendering chunks...
+
+computing gzip size...
+
+../dist/public/index.html                                    1.71 kB │ gzip:   0.69 kB
+../dist/public/assets/cbtx-logo-1-ChT8A-Dw.svg              22.18 kB │ gzip:  12.74 kB
+../dist/public/assets/cbtx-logo-2-CZ1zyuyd.svg              22.21 kB │ gzip:  12.74 kB
+../dist/public/assets/coinbase_wallet_logo-BDH9EEKe.png     25.73 kB
+../dist/public/assets/cbtx-logo-zA2Eyf1r.png                96.81 kB
+../dist/public/assets/index-CtphCjBU.css                    62.82 kB │ gzip:  10.94 kB
+../dist/public/assets/index-B-Nffh4P.js                  1,071.36 kB │ gzip: 339.30 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 30.48s
+
+2025-02-06T20:20:13Z info: Pushing pid1 binary layer...
+2025-02-06T20:20:15Z info: Created pid1 binary layer
+2025-02-06T20:20:17Z info: Pushing hosting layer...
+2025-02-06T20:20:17Z info: Pushing Repl layer...
+2025-02-06T20:20:17Z info: Retrieved cached nix layer
+2025-02-06T20:20:17Z info: Created hosting layer
+2025-02-06T20:20:52Z info: Created Repl layer
+2025-02-06T20:20:52Z info: Pushed image manifest
+2025-02-06T20:20:52Z info: Pushed soci index manifest
+2025-02-06T20:20:52Z info: Pushed referrer manifest
+2025-02-06T20:20:58Z info: Creating virtual machine
+forwarding local port 5000 to external port 80
+2025-02-06T20:22:03Z info: Virtual machine created
+2025-02-06T20:22:03Z info: Waiting for deployment to be ready
+  url: 'file:///home/runner/workspace/dist/server/vite'
+  url: 'file:///home/runner/workspace/dist/server/vite'
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+    at ModuleLoader.getModuleJob (node:internal/modules/esm/loader:239:38)
+    at ModuleWrap.<anonymous> (node:internal/modules/esm/module_job:96:40)
+
+    at defaultResolve (node:internal/modules/esm/resolve:1169:11)
+Node.js v20.18.1
+    at ModuleLoader.getModuleJob (node:internal/modules/esm/loader:239:38)
+}
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:510:25)
+  code: 'ERR_MODULE_NOT_FOUND',
+crash loop detected
+2025-02-06T20:22:33Z error: The deployment is crash looping. This can happen if the run command fails or exits immediately after starting. Check the logs for more information.
