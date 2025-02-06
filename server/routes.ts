@@ -1,5 +1,5 @@
 import type { Express } from "express";
-import { log } from "./vite";
+import { log } from "./vite.js";
 
 export function registerRoutes(app: Express) {
   // Test endpoint
