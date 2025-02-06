@@ -7,7 +7,8 @@ channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "gce"
-run = ["sh", "-c", "npm run build && npm start"]
+run = ["sh", "-c", "NODE_ENV=production node dist/server/index.js"]
+build = ["sh", "-c", "npm run build"]
 
 [workflows]
 runButton = "Build and Start"
