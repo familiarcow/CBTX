@@ -1,4 +1,3 @@
-
 import express from "express";
 import { setupVite } from "./vite";
 import { createServer } from "http";
@@ -13,23 +12,38 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const server = createServer(app);
 
+app.use((err, _req, res, _next) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: 'Internal Server Error' });
+});
+
+app.get('/health', (_req, res) => {
+  res.send('OK');
+});
+
 if (process.env.NODE_ENV !== 'production') {
-  log('Setting up Vite middleware...');
+  log("Setting up development server...");
+  registerRoutes(app);
+  
   setupVite(app, server).then(() => {
     const PORT = 5000;
     server.listen(PORT, '0.0.0.0', () => {
       log(`Development server running on port ${PORT}`);
+    }).on('error', (err) => {
+      log(`Failed to start server: ${err.message}`);
+      process.exit(1);
     });
+  }).catch((err) => {
+    log(`Failed to setup Vite: ${err.message}`);
+    process.exit(1);
   });
 } else {
-  // Serve static files in production
+  log("Setting up production server...");
   const distPath = path.resolve(__dirname, '../client');
   app.use(express.static(distPath));
   
-  // Register API routes
   registerRoutes(app);
   
-  // Serve index.html for all other routes
   app.get('*', (_req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
@@ -37,5 +51,8 @@ if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 5000;
   server.listen(PORT, '0.0.0.0', () => {
     log(`Production server running on port ${PORT}`);
+  }).on('error', (err) => {
+    log(`Failed to start server: ${err.message}`);
+    process.exit(1);
   });
 }
