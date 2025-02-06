@@ -29,17 +29,35 @@ const coinbaseWallet = new CoinbaseWalletSDK({
   appLogoUrl: APP_LOGO_URL
 });
 
-// Initialize provider outside component
+// Initialize provider outside component with Base chain configuration
 const ethereum = coinbaseWallet.makeWeb3Provider(RPC_URL);
 
 // Initialize Web3
-const web3 = new Web3(ethereum);
+const web3 = new Web3(ethereum as any);
+
+// Add RPC methods to provider
+if (ethereum) {
+  ethereum.request = async ({ method, params }: { method: string; params?: any[] }) => {
+    return new Promise((resolve, reject) => {
+      (ethereum as any).send(
+        { method, params: params || [] },
+        (error: any, response: any) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(response.result);
+          }
+        }
+      );
+    });
+  };
+}
 
 interface Web3ContextType {
   account: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
-  provider: any; // Using any type for provider to avoid type conflicts
+  provider: any;
   web3: Web3;
   chainId: number | null;
 }
@@ -59,7 +77,7 @@ interface Web3ProviderProps {
 
 export function Web3Provider({ children }: Web3ProviderProps) {
   const [account, setAccount] = useState<string | null>(null);
-  const [web3Provider, setWeb3Provider] = useState<CoinbaseWalletProvider | null>(ethereum);
+  const [web3Provider, setWeb3Provider] = useState<any>(ethereum);
   const [chainId, setChainId] = useState<number | null>(null);
 
   // Handle chain changes
