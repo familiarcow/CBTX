@@ -39,13 +39,27 @@ if (process.env.NODE_ENV !== 'production') {
   });
 } else {
   log("Setting up production server...");
-  const distPath = path.resolve(__dirname, '../dist/public');
+  const distPath = path.resolve(__dirname, "../dist/public");
+  
+  // Serve static files first
   app.use(express.static(distPath));
   
+  // Register API routes
   registerRoutes(app);
   
-  app.get('*', (_req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
+  // Serve index.html for all other routes (SPA fallback)
+  app.get("*", (_req, res) => {
+    try {
+      res.sendFile(path.join(distPath, "index.html"), (err) => {
+        if (err) {
+          log(`Error sending index.html: ${err}`);
+          res.status(500).send('Error loading application');
+        }
+      });
+    } catch (err) {
+      log(`Failed to serve index.html: ${err}`);
+      res.status(500).send('Error loading application');
+    }
   });
 
   const PORT = process.env.PORT || 5000;
