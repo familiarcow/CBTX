@@ -397,7 +397,7 @@ export default function Home() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 hover:text-gray-700 transition-colors"
                     >
-                      Open in Coinbase Wallet App
+                      Open in Coinbase Wallet
                       <ArrowUpRight className="h-4 w-4" />
                     </a>
                   </div>
