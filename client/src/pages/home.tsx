@@ -390,6 +390,17 @@ export default function Home() {
                     </h1>
                   </div>
                   <WalletConnect />
+                  <div className="mt-4 text-gray-500 text-sm">
+                    <a
+                      href={`https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(window.location.href)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 hover:text-gray-700 transition-colors"
+                    >
+                      Open in Coinbase Wallet App
+                      <ArrowUpRight className="h-4 w-4" />
+                    </a>
+                  </div>
                 </CardContent>
               )}
             </Card>
