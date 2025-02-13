@@ -376,15 +376,15 @@ export default function Home() {
               {!account && (
                 <CardContent className="flex flex-col items-center justify-center p-8">
                   <div className="mb-8 flex flex-col items-center">
-                    <h1 className="text-4xl font-bold mb-4 text-gray-900">
+                    <h1 className="text-2xl md:text-4xl font-bold mb-4 text-gray-900 flex items-center justify-center flex-nowrap whitespace-nowrap">
                       <span className="inline-flex items-center">
-                      From{" "}
-                        <img src={baseLogo} alt="Base" className="h-8 w-8 mx-2" />
+                        From{" "}
+                        <img src={baseLogo} alt="Base" className="h-6 w-6 md:h-8 md:w-8 mx-1 md:mx-2" />
                         Base
                       </span>
                       {" "}→{" "}
                       <span className="inline-flex items-center">
-                        <img src={btcLogo} alt="Bitcoin" className="h-8 w-8 mx-2" />
+                        <img src={btcLogo} alt="Bitcoin" className="h-6 w-6 md:h-8 md:w-8 mx-1 md:mx-2" />
                         Bitcoin
                       </span>
                     </h1>
