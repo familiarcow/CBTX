@@ -11,6 +11,7 @@ import { getInboundAddresses, calculateMinOutput, CBBTC_ADDRESS } from "@/lib/th
 import { motion } from "framer-motion";
 import { approveERC20, depositWithExpiry, getRouterAddress } from "@/lib/callcontract";
 import { LogoHeader } from "@/components/logo-header";
+import { Footer } from "@/components/footer";
 import { Settings2, Package, ChevronDown, ChevronUp, ArrowUpRight } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormDescription } from "@/components/ui/form";
@@ -770,6 +771,7 @@ export default function Home() {
           </motion.div>
         </div>
       </div>
+    <Footer />
     </div>
   );
 }
