@@ -58,7 +58,7 @@ export default function Home() {
   const [destinationAsset, setDestinationAsset] = useState<string>('BTC.BTC');
   const [isApproving, setIsApproving] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [selectedAsset, setSelectedAsset] = useState<SupportedAsset>('cbBTC');
+  const [selectedAsset, setSelectedAsset] = useState<SupportedAsset>('ETH');
   const [swapCountdown, setSwapCountdown] = useState<number | null>(null);
   const [thorchainTxId, setThorchainTxId] = useState<string | null>(null);
   const [isSwapCollapsed, setIsSwapCollapsed] = useState(false);
