@@ -4,9 +4,11 @@ import { useWeb3 } from "@/lib/web3";
 import { ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 import coinbaseLogo from "/images/coinbase_wallet_logo.png";
+import { useBasename } from '@/hooks/use-basename';
 
 export function WalletConnect() {
   const { connect, disconnect, account } = useWeb3();
+  const { basename, loading } = useBasename(account as `0x${string}` | null);
 
   const getBaseScanUrl = (address: string) => {
     return `https://basescan.org/address/${address}`;
@@ -25,7 +27,13 @@ export function WalletConnect() {
               rel="noopener noreferrer"
               className="ml-2 font-medium text-[#0052FF] hover:text-[#0052FF]/80 transition-colors inline-flex items-center gap-1"
             >
-              {account.slice(0, 6)}...{account.slice(-4)}
+              {loading ? (
+                <span className="text-gray-400">Loading...</span>
+              ) : basename ? (
+                basename
+              ) : (
+                `${account.slice(0, 6)}...${account.slice(-4)}`
+              )}
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>
