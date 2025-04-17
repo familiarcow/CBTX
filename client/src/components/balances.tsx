@@ -5,6 +5,8 @@ import { useWeb3 } from "@/lib/web3";
 import { LogOut } from "lucide-react";
 import { truncateAddress } from "@/lib/utils";
 import { useBasename } from "@/hooks/use-basename";
+import { useEffect, useState } from "react";
+import { refreshBalancesEvent } from "@/lib/transaction";
 
 // Import logos
 import baseLogo from '../../images/base-logo.svg';
@@ -20,6 +22,21 @@ type BalanceProps = {
 export function Balances({ selectedAsset, onAssetSelect }: BalanceProps) {
   const { account, web3, disconnect } = useWeb3();
   const { basename, loading: basenameLoading } = useBasename(account as `0x${string}` | null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  
+  // Listen for the refresh-balances event
+  useEffect(() => {
+    const handleRefreshBalances = () => {
+      console.log('Refreshing balances from event trigger');
+      setRefreshTrigger(prev => prev + 1);
+    };
+    
+    window.addEventListener('refresh-balances', handleRefreshBalances);
+    
+    return () => {
+      window.removeEventListener('refresh-balances', handleRefreshBalances);
+    };
+  }, []);
 
   if (!account) return null;
   
@@ -74,6 +91,7 @@ export function Balances({ selectedAsset, onAssetSelect }: BalanceProps) {
               chainLogo={baseLogo}
               isSelected={selectedAsset === 'ETH'}
               onSelect={() => onAssetSelect('ETH')}
+              refreshKey={refreshTrigger}
             />
             <TokenBalance 
               symbol="USDC" 
@@ -81,6 +99,7 @@ export function Balances({ selectedAsset, onAssetSelect }: BalanceProps) {
               chainLogo={baseLogo}
               isSelected={selectedAsset === 'USDC'}
               onSelect={() => onAssetSelect('USDC')}
+              refreshKey={refreshTrigger}
             />
             <TokenBalance 
               symbol="cbBTC" 
@@ -88,6 +107,7 @@ export function Balances({ selectedAsset, onAssetSelect }: BalanceProps) {
               chainLogo={baseLogo}
               isSelected={selectedAsset === 'cbBTC'}
               onSelect={() => onAssetSelect('cbBTC')}
+              refreshKey={refreshTrigger}
             />
           </CardContent>
         </Card>

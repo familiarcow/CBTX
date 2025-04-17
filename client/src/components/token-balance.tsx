@@ -26,9 +26,10 @@ interface TokenBalanceProps {
   onSelect?: () => void;
   logo?: string;
   chainLogo?: string;
+  refreshKey?: number;
 }
 
-export function TokenBalance({ symbol, isSelected, onSelect, logo, chainLogo }: TokenBalanceProps) {
+export function TokenBalance({ symbol, isSelected, onSelect, logo, chainLogo, refreshKey = 0 }: TokenBalanceProps) {
   const { data: config, isLoading: configLoading } = useConfig();
   const { data: prices, isLoading: pricesLoading, isError: pricesError } = useUSDValues();
   const { account } = useWeb3();
@@ -84,12 +85,14 @@ export function TokenBalance({ symbol, isSelected, onSelect, logo, chainLogo }: 
     return usdValue;
   };
 
+  // Fetch balance when account, symbol, config, or refreshKey changes
   useEffect(() => {
     async function fetchBalance() {
       console.log('fetchBalance running:', {
         symbol,
         hasConfig: Boolean(config),
-        hasAccount: Boolean(account)
+        hasAccount: Boolean(account),
+        refreshKey
       });
 
       if (!account || !config) {
@@ -127,7 +130,7 @@ export function TokenBalance({ symbol, isSelected, onSelect, logo, chainLogo }: 
     }
 
     fetchBalance();
-  }, [account, symbol, config]);
+  }, [account, symbol, config, refreshKey]);
 
   return (
     <Card 

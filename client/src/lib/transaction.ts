@@ -4,6 +4,9 @@ import { SUPPORTED_ASSETS, SupportedAsset } from "@/lib/constants";
 import type { QuoteResponse } from "@/lib/thorchain";
 import type { ToastProps } from "@/components/ui/toast";
 
+// Event for triggering balance refresh
+export const refreshBalancesEvent = new CustomEvent('refresh-balances');
+
 type TransactionParams = {
   web3: any;
   account: string;
@@ -13,6 +16,13 @@ type TransactionParams = {
   onTxHash: (hash: string) => void;
   onCountdown: (seconds: number) => void;
   onError: (error: Error) => void;
+};
+
+// Helper function to trigger balance refresh with delay
+const triggerBalanceRefresh = (delayMs = 500) => {
+  setTimeout(() => {
+    window.dispatchEvent(refreshBalancesEvent);
+  }, delayMs);
 };
 
 export const handleTransaction = async ({
@@ -106,6 +116,9 @@ export const handleTransaction = async ({
           amount, // Using converted amount for approval
           account
         );
+        
+        // Refresh balances after approval with delay
+        triggerBalanceRefresh();
       } catch (error) {
         // If error is "Sufficient allowance already exists", we can proceed
         if (!(error instanceof Error && error.message === 'Sufficient allowance already exists')) {
@@ -167,6 +180,9 @@ export const handleTransaction = async ({
 
           // Start the countdown
           onCountdown(quote.total_swap_seconds);
+
+          // Refresh balances after transaction hash is received
+          triggerBalanceRefresh();
 
           toast({
             title: "Transaction Submitted",
