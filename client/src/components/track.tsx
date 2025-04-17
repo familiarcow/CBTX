@@ -35,6 +35,29 @@ interface SwapStageStatus {
   };
 }
 
+interface StageTimers {
+  inbound_observed?: {
+    startTime: number;
+    endTime?: number;
+  };
+  inbound_confirmation_counted?: {
+    startTime: number;
+    endTime?: number;
+  };
+  inbound_finalised?: {
+    startTime: number;
+    endTime?: number;
+  };
+  swap_finalised?: {
+    startTime: number;
+    endTime?: number;
+  };
+  outbound_signed?: {
+    startTime: number;
+    endTime?: number;
+  };
+}
+
 export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
   const [swapStages, setSwapStages] = useState<SwapStageStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -44,6 +67,9 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [elapsedTime, setElapsedTime] = useState(0);
   const [timerStarted, setTimerStarted] = useState(false);
+  const [stageTimers, setStageTimers] = useState<StageTimers>({});
+  const [currentStage, setCurrentStage] = useState<string | null>(null);
+  const [swapStartTime] = useState<number>(Date.now());
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const completionTriggeredRef = useRef(false);
@@ -70,7 +96,7 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
     if (thorchainTxId && !timerStarted && !isCompleted) {
       setTimerStarted(true);
       timerIntervalRef.current = setInterval(() => {
-        setElapsedTime(prev => prev + 1);
+        setElapsedTime(Math.floor((Date.now() - swapStartTime) / 1000));
       }, 1000);
     }
     
@@ -80,7 +106,7 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
         clearInterval(timerIntervalRef.current);
       }
     };
-  }, [thorchainTxId, timerStarted, isCompleted]);
+  }, [thorchainTxId, timerStarted, isCompleted, swapStartTime]);
 
   // Stop timer when swap completes
   useEffect(() => {
@@ -89,13 +115,6 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
       timerIntervalRef.current = null;
     }
   }, [isCompleted]);
-
-  // Format countdown time
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   // Format elapsed time in a human-readable format
   const formatElapsedTime = (seconds: number): string => {
@@ -110,6 +129,15 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
       const mins = Math.floor((seconds % 3600) / 60);
       return `${hours}h ${mins}m`;
     }
+  };
+
+  // Calculate stage duration
+  const getStageElapsedTime = (stageName: string): number => {
+    const stageData = stageTimers[stageName as keyof StageTimers];
+    if (!stageData) return 0;
+    
+    const endTime = stageData.endTime || Date.now();
+    return Math.floor((endTime - stageData.startTime) / 1000);
   };
 
   // Handle swap completion effects
@@ -134,6 +162,99 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
     });
     
     completionTriggeredRef.current = true;
+  };
+
+  // Update stage timers when status changes
+  const updateStageTimers = (newStages: SwapStageStatus, prevStages: SwapStageStatus | null) => {
+    const updatedTimers = { ...stageTimers };
+    const now = Date.now();
+    let currentStageName: string | null = null;
+
+    // Helper to check if a stage just started
+    const stageStarted = (stage: string, started: boolean, prevStarted?: boolean) => {
+      return started && (!prevStages || !prevStages[stage as keyof SwapStageStatus] || prevStarted === false);
+    };
+
+    // Helper to check if a stage just completed
+    const stageCompleted = (stage: string, completed: boolean, prevCompleted?: boolean) => {
+      return completed && prevStages && prevStages[stage as keyof SwapStageStatus] && !prevCompleted;
+    };
+
+    // Check inbound_observed
+    if (newStages.inbound_observed?.started) {
+      if (!updatedTimers.inbound_observed) {
+        updatedTimers.inbound_observed = { startTime: now };
+      }
+      if (newStages.inbound_observed?.completed && !updatedTimers.inbound_observed.endTime) {
+        updatedTimers.inbound_observed.endTime = now;
+      }
+      if (!newStages.inbound_observed?.completed) {
+        currentStageName = 'inbound_observed';
+      }
+    }
+
+    // Check inbound_confirmation_counted
+    if (newStages.inbound_confirmation_counted) {
+      if (newStages.inbound_observed?.completed && !updatedTimers.inbound_confirmation_counted) {
+        updatedTimers.inbound_confirmation_counted = { startTime: now };
+      }
+      if (newStages.inbound_confirmation_counted?.completed && updatedTimers.inbound_confirmation_counted && !updatedTimers.inbound_confirmation_counted.endTime) {
+        if (updatedTimers.inbound_confirmation_counted) {
+          updatedTimers.inbound_confirmation_counted.endTime = now;
+        }
+      }
+      if (!newStages.inbound_confirmation_counted?.completed && newStages.inbound_observed?.completed) {
+        currentStageName = 'inbound_confirmation_counted';
+      }
+    }
+
+    // Check inbound_finalised
+    if (newStages.inbound_finalised) {
+      if (newStages.inbound_confirmation_counted?.completed && !updatedTimers.inbound_finalised) {
+        updatedTimers.inbound_finalised = { startTime: now };
+      }
+      if (newStages.inbound_finalised?.completed && updatedTimers.inbound_finalised && !updatedTimers.inbound_finalised.endTime) {
+        if (updatedTimers.inbound_finalised) {
+          updatedTimers.inbound_finalised.endTime = now;
+        }
+      }
+      if (!newStages.inbound_finalised?.completed && newStages.inbound_confirmation_counted?.completed) {
+        currentStageName = 'inbound_finalised';
+      }
+    }
+
+    // Check swap_finalised
+    if (newStages.swap_finalised) {
+      if (newStages.inbound_finalised?.completed && !updatedTimers.swap_finalised) {
+        updatedTimers.swap_finalised = { startTime: now };
+      }
+      if (newStages.swap_finalised?.completed && updatedTimers.swap_finalised && !updatedTimers.swap_finalised.endTime) {
+        if (updatedTimers.swap_finalised) {
+          updatedTimers.swap_finalised.endTime = now;
+        }
+      }
+      if (!newStages.swap_finalised?.completed && newStages.inbound_finalised?.completed) {
+        currentStageName = 'swap_finalised';
+      }
+    }
+
+    // Check outbound_signed
+    if (newStages.outbound_signed) {
+      if (newStages.swap_finalised?.completed && !updatedTimers.outbound_signed) {
+        updatedTimers.outbound_signed = { startTime: now };
+      }
+      if (newStages.outbound_signed?.completed && updatedTimers.outbound_signed && !updatedTimers.outbound_signed.endTime) {
+        if (updatedTimers.outbound_signed) {
+          updatedTimers.outbound_signed.endTime = now;
+        }
+      }
+      if (!newStages.outbound_signed?.completed && newStages.swap_finalised?.completed) {
+        currentStageName = 'outbound_signed';
+      }
+    }
+
+    setStageTimers(updatedTimers);
+    setCurrentStage(currentStageName);
   };
 
   // Fetch swap status from thorchain API
@@ -197,6 +318,9 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
           completed: !!data.outbound_signed.completed
         };
       }
+      
+      // Update stage timers before updating the stages
+      updateStageTimers(validData, swapStages);
       
       // We now set swap stages with our safely constructed object
       setSwapStages(validData);
@@ -321,6 +445,10 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                   <CheckCircle2 className="h-12 w-12 text-green-500" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 z-10 relative">Swap Completed</h3>
+                <div className="flex items-center gap-1 text-gray-600 z-10 mb-2">
+                  <Clock className="h-4 w-4" />
+                  <span>Completed in {formatElapsedTime(elapsedTime)}</span>
+                </div>
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -348,14 +476,13 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                     </code>
                   </div>
                   
-                  {swapCountdown !== null && swapCountdown > 0 && (
-                    <div className="flex flex-col gap-2">
-                      <span className="text-sm text-gray-600 font-medium">Estimated Completion</span>
-                      <div className="flex items-center gap-2 text-gray-800 font-semibold">
-                        <span>{formatTime(swapCountdown)}</span>
-                      </div>
+                  <div className="flex flex-col gap-2">
+                    <span className="text-sm text-gray-600 font-medium">Elapsed Time</span>
+                    <div className="flex items-center gap-2 text-gray-800 font-semibold">
+                      <Clock className="h-4 w-4 text-yellow-500" />
+                      <span>{formatElapsedTime(elapsedTime)}</span>
                     </div>
-                  )}
+                  </div>
 
                   {/* Swap Stage Progress */}
                   <div className="flex flex-col gap-3 pt-2">
@@ -397,6 +524,11 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                               <Loader2 className="h-4 w-4 text-yellow-500" />
                             </motion.div>
                             <span className="font-medium">{getCurrentStepMessage()}</span>
+                            {currentStage && (
+                              <span className="text-xs text-gray-500 ml-auto">
+                                Current step: {formatElapsedTime(getStageElapsedTime(currentStage))}
+                              </span>
+                            )}
                           </div>
                           
                           <div className="space-y-3.5">
@@ -406,6 +538,7 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                                 isCompleted={!!swapStages.inbound_observed.completed}
                                 isStarted={swapStages.inbound_observed.started !== false}
                                 isActive={!swapStages.inbound_observed.completed && swapStages.inbound_observed.started !== false}
+                                duration={stageTimers.inbound_observed ? formatElapsedTime(getStageElapsedTime('inbound_observed')) : ''}
                               />
                             )}
                             {swapStages.inbound_confirmation_counted && (
@@ -413,6 +546,7 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                                 label="Confirmation Counts" 
                                 isCompleted={!!swapStages.inbound_confirmation_counted.completed}
                                 isActive={!swapStages.inbound_confirmation_counted.completed && swapStages.inbound_observed?.completed === true}
+                                duration={stageTimers.inbound_confirmation_counted ? formatElapsedTime(getStageElapsedTime('inbound_confirmation_counted')) : ''}
                               />
                             )}
                             {swapStages.inbound_finalised && (
@@ -420,6 +554,7 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                                 label="Inbound Finalized" 
                                 isCompleted={!!swapStages.inbound_finalised.completed}
                                 isActive={!swapStages.inbound_finalised.completed && swapStages.inbound_confirmation_counted?.completed === true}
+                                duration={stageTimers.inbound_finalised ? formatElapsedTime(getStageElapsedTime('inbound_finalised')) : ''}
                               />
                             )}
                             {swapStages.swap_finalised && (
@@ -427,6 +562,7 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                                 label="Swap Finalized" 
                                 isCompleted={!!swapStages.swap_finalised.completed}
                                 isActive={!swapStages.swap_finalised.completed && swapStages.inbound_finalised?.completed === true}
+                                duration={stageTimers.swap_finalised ? formatElapsedTime(getStageElapsedTime('swap_finalised')) : ''}
                               />
                             )}
                             {swapStages.outbound_signed && (
@@ -434,6 +570,7 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                                 label="Outbound Signed" 
                                 isCompleted={!!swapStages.outbound_signed.completed}
                                 isActive={!swapStages.outbound_signed.completed && swapStages.swap_finalised?.completed === true}
+                                duration={stageTimers.outbound_signed ? formatElapsedTime(getStageElapsedTime('outbound_signed')) : ''}
                               />
                             )}
                           </div>
@@ -474,33 +611,42 @@ function SwapStageItem({
   label, 
   isCompleted, 
   isStarted = true, 
-  isActive = false 
+  isActive = false,
+  duration = '' 
 }: { 
   label: string; 
   isCompleted: boolean; 
   isStarted?: boolean; 
   isActive?: boolean;
+  duration?: string;
 }) {
   return (
     <div className="flex items-center justify-between">
       <span className={`text-sm ${isActive ? 'text-gray-800 font-medium' : 'text-gray-600'}`}>{label}</span>
-      <div className={`flex items-center ${isCompleted ? 'text-green-500' : isActive ? 'text-yellow-500' : isStarted ? 'text-yellow-400' : 'text-gray-400'}`}>
-        {isCompleted ? (
-          <CheckCircle2 className="h-5 w-5" />
-        ) : isActive ? (
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ 
-              repeat: Infinity, 
-              duration: 1.5,
-              ease: "easeInOut"
-            }}
-          >
-            <div className="h-4 w-4 rounded-full border-2 border-yellow-400 bg-yellow-100"></div>
-          </motion.div>
-        ) : (
-          <div className={`h-4 w-4 rounded-full border-2 ${isStarted ? 'border-yellow-300' : 'border-gray-300'}`}></div>
+      <div className="flex items-center gap-2">
+        {duration && (
+          <span className={`text-xs ${isActive ? 'text-yellow-600' : isCompleted ? 'text-green-600' : 'text-gray-500'}`}>
+            {duration}
+          </span>
         )}
+        <div className={`flex items-center ${isCompleted ? 'text-green-500' : isActive ? 'text-yellow-500' : isStarted ? 'text-yellow-400' : 'text-gray-400'}`}>
+          {isCompleted ? (
+            <CheckCircle2 className="h-5 w-5" />
+          ) : isActive ? (
+            <motion.div
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ 
+                repeat: Infinity, 
+                duration: 1.5,
+                ease: "easeInOut"
+              }}
+            >
+              <div className="h-4 w-4 rounded-full border-2 border-yellow-400 bg-yellow-100"></div>
+            </motion.div>
+          ) : (
+            <div className={`h-4 w-4 rounded-full border-2 ${isStarted ? 'border-yellow-300' : 'border-gray-300'}`}></div>
+          )}
+        </div>
       </div>
     </div>
   );
