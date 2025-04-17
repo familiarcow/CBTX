@@ -11,26 +11,27 @@ interface TrackProps {
 }
 
 interface SwapStageStatus {
-  inbound_observed: {
-    pre_confirmation_count: number;
-    final_count: number;
-    completed: boolean;
+  inbound_observed?: {
+    started?: boolean;
+    pre_confirmation_count?: number;
+    final_count?: number;
+    completed?: boolean;
   };
-  inbound_confirmation_counted: {
-    remaining_confirmation_seconds: number;
-    completed: boolean;
+  inbound_confirmation_counted?: {
+    remaining_confirmation_seconds?: number;
+    completed?: boolean;
   };
-  inbound_finalised: {
-    completed: boolean;
+  inbound_finalised?: {
+    completed?: boolean;
   };
-  swap_status: {
-    pending: boolean;
+  swap_status?: {
+    pending?: boolean;
   };
-  swap_finalised: {
-    completed: boolean;
+  swap_finalised?: {
+    completed?: boolean;
   };
-  outbound_signed: {
-    completed: boolean;
+  outbound_signed?: {
+    completed?: boolean;
   };
 }
 
@@ -108,31 +109,52 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
       const data = await response.json();
       
       // Create a new status object that intelligently handles missing fields
-      // If a field isn't present, it means that stage hasn't been reached yet
-      const validData: SwapStageStatus = {
-        inbound_observed: {
-          pre_confirmation_count: data?.inbound_observed?.pre_confirmation_count || 0,
-          final_count: data?.inbound_observed?.final_count || 0,
-          completed: !!data?.inbound_observed?.completed
-        },
-        inbound_confirmation_counted: {
-          remaining_confirmation_seconds: data?.inbound_confirmation_counted?.remaining_confirmation_seconds || 0,
-          completed: !!data?.inbound_confirmation_counted?.completed
-        },
-        inbound_finalised: {
-          completed: !!data?.inbound_finalised?.completed
-        },
-        swap_status: {
-          pending: !!data?.swap_status?.pending
-        },
-        swap_finalised: {
-          completed: !!data?.swap_finalised?.completed
-        },
-        outbound_signed: {
-          completed: !!data?.outbound_signed?.completed
-        }
-      };
+      // If a field doesn't exist in the API response, we'll set it to undefined
+      // This way we can safely check if it exists before accessing its properties
+      const validData: SwapStageStatus = {};
       
+      // Only add stages that exist in the response
+      if (data?.inbound_observed) {
+        validData.inbound_observed = {
+          started: data.inbound_observed.started,
+          pre_confirmation_count: data.inbound_observed.pre_confirmation_count ?? 0,
+          final_count: data.inbound_observed.final_count ?? 0,
+          completed: !!data.inbound_observed.completed
+        };
+      }
+      
+      if (data?.inbound_confirmation_counted) {
+        validData.inbound_confirmation_counted = {
+          remaining_confirmation_seconds: data.inbound_confirmation_counted.remaining_confirmation_seconds ?? 0,
+          completed: !!data.inbound_confirmation_counted.completed
+        };
+      }
+      
+      if (data?.inbound_finalised) {
+        validData.inbound_finalised = {
+          completed: !!data.inbound_finalised.completed
+        };
+      }
+      
+      if (data?.swap_status) {
+        validData.swap_status = {
+          pending: !!data.swap_status.pending
+        };
+      }
+      
+      if (data?.swap_finalised) {
+        validData.swap_finalised = {
+          completed: !!data.swap_finalised.completed
+        };
+      }
+      
+      if (data?.outbound_signed) {
+        validData.outbound_signed = {
+          completed: !!data.outbound_signed.completed
+        };
+      }
+      
+      // We now set swap stages with our safely constructed object
       setSwapStages(validData);
       
       // Check if the last status in the response is outbound_signed and it's completed
@@ -193,20 +215,22 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
     if (!swapStages) return "Initializing...";
     
     // Check in reverse order to find the last stage that exists in the response
-    if (swapStages.outbound_signed && swapStages.outbound_signed.completed) {
+    if (swapStages.outbound_signed?.completed === true) {
       return "Swap completed successfully";
     } else if (swapStages.outbound_signed) {
       return "Swap completed. Sending outbound";
-    } else if (swapStages.swap_finalised && swapStages.swap_finalised.completed) {
+    } else if (swapStages.swap_finalised?.completed === true) {
       return "Swap completed. Sending outbound";
     } else if (swapStages.swap_finalised) {
       return "Swap in progress";
-    } else if (swapStages.inbound_finalised && swapStages.inbound_finalised.completed) {
+    } else if (swapStages.inbound_finalised?.completed === true) {
       return "Awaiting Swap";
-    } else if (swapStages.inbound_confirmation_counted && swapStages.inbound_confirmation_counted.completed) {
+    } else if (swapStages.inbound_confirmation_counted?.completed === true) {
       return "Awaiting Confirmation Counts";
-    } else if (swapStages.inbound_observed && swapStages.inbound_observed.completed) {
+    } else if (swapStages.inbound_observed?.completed === true) {
       return "Awaiting Observation";
+    } else if (swapStages.inbound_observed?.started === false) {
+      return "Waiting for observation...";
     } else {
       return "Initializing swap...";
     }
@@ -316,31 +340,32 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                             {swapStages.inbound_observed && (
                               <SwapStageItem 
                                 label="Inbound Observed" 
-                                isCompleted={swapStages.inbound_observed.completed} 
+                                isCompleted={!!swapStages.inbound_observed.completed}
+                                isStarted={swapStages.inbound_observed.started !== false}
                               />
                             )}
                             {swapStages.inbound_confirmation_counted && (
                               <SwapStageItem 
                                 label="Confirmation Counts" 
-                                isCompleted={swapStages.inbound_confirmation_counted.completed} 
+                                isCompleted={!!swapStages.inbound_confirmation_counted.completed} 
                               />
                             )}
                             {swapStages.inbound_finalised && (
                               <SwapStageItem 
                                 label="Inbound Finalized" 
-                                isCompleted={swapStages.inbound_finalised.completed} 
+                                isCompleted={!!swapStages.inbound_finalised.completed} 
                               />
                             )}
                             {swapStages.swap_finalised && (
                               <SwapStageItem 
                                 label="Swap Finalized" 
-                                isCompleted={swapStages.swap_finalised.completed} 
+                                isCompleted={!!swapStages.swap_finalised.completed} 
                               />
                             )}
                             {swapStages.outbound_signed && (
                               <SwapStageItem 
                                 label="Outbound Signed" 
-                                isCompleted={swapStages.outbound_signed.completed} 
+                                isCompleted={!!swapStages.outbound_signed.completed} 
                               />
                             )}
                           </div>
@@ -377,15 +402,15 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
 }
 
 // Helper component for swap stages
-function SwapStageItem({ label, isCompleted }: { label: string; isCompleted: boolean }) {
+function SwapStageItem({ label, isCompleted, isStarted = true }: { label: string; isCompleted: boolean; isStarted?: boolean }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-sm text-gray-600">{label}</span>
-      <div className={`flex items-center ${isCompleted ? 'text-green-500' : 'text-gray-400'}`}>
+      <div className={`flex items-center ${isCompleted ? 'text-green-500' : isStarted ? 'text-yellow-500' : 'text-gray-400'}`}>
         {isCompleted ? (
           <CheckCircle2 className="h-5 w-5" />
         ) : (
-          <div className="h-4 w-4 rounded-full border-2 border-gray-300"></div>
+          <div className={`h-4 w-4 rounded-full border-2 ${isStarted ? 'border-yellow-300' : 'border-gray-300'}`}></div>
         )}
       </div>
     </div>
