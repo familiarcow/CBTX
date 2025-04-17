@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
+import Info from "@/pages/info";
 import { Web3Provider } from "@/lib/web3";
 
 // Create a client with default options
@@ -20,6 +21,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/info" component={Info} />
       <Route component={NotFound} />
     </Switch>
   );

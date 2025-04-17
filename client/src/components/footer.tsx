@@ -1,4 +1,5 @@
-import { Github } from "lucide-react";
+import { Github, Info } from "lucide-react";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
 
 export function Footer() {
@@ -11,6 +12,12 @@ export function Footer() {
     >
       <div className="max-w-2xl mx-auto flex items-center justify-center">
         <div className="flex items-center gap-4">
+          
+          <Link href="/info">
+            <a className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+              <Info className="h-4 w-4" />
+            </a>
+          </Link>
           <a
             href="https://github.com/familiarcow/CBTX"
             target="_blank"
@@ -27,6 +34,7 @@ export function Footer() {
           >
             <span className="text-xl font-bold">𝕏</span>
           </a>
+         
         </div>
       </div>
     </motion.footer>
