@@ -105,13 +105,41 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
         throw new Error(`Status ${response.status}: Failed to fetch swap status`);
       }
       
-      const data = await response.json() as SwapStageStatus;
-      setSwapStages(data);
+      const data = await response.json();
       
-      // Check if swap is fully completed
-      if (data.outbound_signed.completed) {
+      // Create a new status object that intelligently handles missing fields
+      // If a field isn't present, it means that stage hasn't been reached yet
+      const validData: SwapStageStatus = {
+        inbound_observed: {
+          pre_confirmation_count: data?.inbound_observed?.pre_confirmation_count || 0,
+          final_count: data?.inbound_observed?.final_count || 0,
+          completed: !!data?.inbound_observed?.completed
+        },
+        inbound_confirmation_counted: {
+          remaining_confirmation_seconds: data?.inbound_confirmation_counted?.remaining_confirmation_seconds || 0,
+          completed: !!data?.inbound_confirmation_counted?.completed
+        },
+        inbound_finalised: {
+          completed: !!data?.inbound_finalised?.completed
+        },
+        swap_status: {
+          pending: !!data?.swap_status?.pending
+        },
+        swap_finalised: {
+          completed: !!data?.swap_finalised?.completed
+        },
+        outbound_signed: {
+          completed: !!data?.outbound_signed?.completed
+        }
+      };
+      
+      setSwapStages(validData);
+      
+      // Check if the last status in the response is outbound_signed and it's completed
+      const isFullyCompleted = data?.outbound_signed?.completed === true;
+      
+      if (isFullyCompleted) {
         setIsCompleted(true);
-        
         // Trigger completion effects
         triggerCompletionEffects();
       }
@@ -160,27 +188,32 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
     return () => clearInterval(intervalId);
   }, [thorchainTxId, isCompleted]);
 
-  // Determine current step message
+  // Determine current step message based on the available data
   const getCurrentStepMessage = (): string => {
     if (!swapStages) return "Initializing...";
     
-    if (!swapStages.inbound_observed.completed) {
-      return "Awaiting Observation";
-    } else if (!swapStages.inbound_confirmation_counted.completed) {
-      return "Awaiting Confirmation Counts";
-    } else if (!swapStages.inbound_finalised.completed) {
-      return "Awaiting Swap";
-    } else if (!swapStages.swap_finalised.completed) {
-      return "Swap in progress";
-    } else if (!swapStages.outbound_signed.completed) {
-      return "Swap completed. Sending outbound";
-    } else {
+    // Check in reverse order to find the last stage that exists in the response
+    if (swapStages.outbound_signed && swapStages.outbound_signed.completed) {
       return "Swap completed successfully";
+    } else if (swapStages.outbound_signed) {
+      return "Swap completed. Sending outbound";
+    } else if (swapStages.swap_finalised && swapStages.swap_finalised.completed) {
+      return "Swap completed. Sending outbound";
+    } else if (swapStages.swap_finalised) {
+      return "Swap in progress";
+    } else if (swapStages.inbound_finalised && swapStages.inbound_finalised.completed) {
+      return "Awaiting Swap";
+    } else if (swapStages.inbound_confirmation_counted && swapStages.inbound_confirmation_counted.completed) {
+      return "Awaiting Confirmation Counts";
+    } else if (swapStages.inbound_observed && swapStages.inbound_observed.completed) {
+      return "Awaiting Observation";
+    } else {
+      return "Initializing swap...";
     }
   };
 
-  // Check if swap is fully completed
-  const isSwapFullyCompleted = swapStages?.outbound_signed.completed === true;
+  // Check if swap is fully completed - look directly for outbound_signed.completed
+  const isSwapFullyCompleted = swapStages?.outbound_signed?.completed === true;
 
   return (
     <motion.div
@@ -280,26 +313,36 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                           </div>
                           
                           <div className="space-y-3">
-                            <SwapStageItem 
-                              label="Inbound Observed" 
-                              isCompleted={swapStages.inbound_observed.completed} 
-                            />
-                            <SwapStageItem 
-                              label="Confirmation Counts" 
-                              isCompleted={swapStages.inbound_confirmation_counted.completed} 
-                            />
-                            <SwapStageItem 
-                              label="Inbound Finalized" 
-                              isCompleted={swapStages.inbound_finalised.completed} 
-                            />
-                            <SwapStageItem 
-                              label="Swap Finalized" 
-                              isCompleted={swapStages.swap_finalised.completed} 
-                            />
-                            <SwapStageItem 
-                              label="Outbound Signed" 
-                              isCompleted={swapStages.outbound_signed.completed} 
-                            />
+                            {swapStages.inbound_observed && (
+                              <SwapStageItem 
+                                label="Inbound Observed" 
+                                isCompleted={swapStages.inbound_observed.completed} 
+                              />
+                            )}
+                            {swapStages.inbound_confirmation_counted && (
+                              <SwapStageItem 
+                                label="Confirmation Counts" 
+                                isCompleted={swapStages.inbound_confirmation_counted.completed} 
+                              />
+                            )}
+                            {swapStages.inbound_finalised && (
+                              <SwapStageItem 
+                                label="Inbound Finalized" 
+                                isCompleted={swapStages.inbound_finalised.completed} 
+                              />
+                            )}
+                            {swapStages.swap_finalised && (
+                              <SwapStageItem 
+                                label="Swap Finalized" 
+                                isCompleted={swapStages.swap_finalised.completed} 
+                              />
+                            )}
+                            {swapStages.outbound_signed && (
+                              <SwapStageItem 
+                                label="Outbound Signed" 
+                                isCompleted={swapStages.outbound_signed.completed} 
+                              />
+                            )}
                           </div>
                         </div>
                       </>
