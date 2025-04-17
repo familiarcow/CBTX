@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { getSwapQuote, type QuoteResponse } from "@/lib/thorchain";
 import { useWeb3 } from "@/lib/web3";
-import { ArrowDown, Package, Settings2, ChevronDown, Check } from "lucide-react";
+import { ArrowDown, Package, Settings2, ChevronDown, Check, X, Clipboard } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   Popover,
@@ -413,11 +413,44 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
                       </div>
                     </FormLabel>
                     <FormControl>
-                      <Input 
-                        {...field} 
-                        placeholder={`Enter ${chain} address`}
-                        className="rounded-xl h-12 border-gray-200 focus-visible:ring-[#0052FF]"
-                      />
+                      <div className="relative">
+                        <Input 
+                          {...field} 
+                          placeholder={`Enter ${chain} address`}
+                          className="rounded-xl h-12 border-gray-200 focus-visible:ring-[#0052FF] pr-10"
+                        />
+                        {field.value ? (
+                          <button
+                            type="button"
+                            onClick={() => field.onChange("")}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            <X className="h-4 w-4" />
+                            <span className="sr-only">Clear address</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const text = await navigator.clipboard.readText();
+                                field.onChange(text.trim());
+                              } catch (error) {
+                                console.error("Failed to read clipboard:", error);
+                                toast({
+                                  title: "Clipboard Error",
+                                  description: "Unable to access clipboard. Please check your browser permissions.",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            <Clipboard className="h-4 w-4" />
+                            <span className="sr-only">Paste address</span>
+                          </button>
+                        )}
+                      </div>
                     </FormControl>
                   </FormItem>
                 );
