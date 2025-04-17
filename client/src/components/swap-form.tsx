@@ -31,6 +31,9 @@ import {
   CHAIN_LOGOS 
 } from "@/lib/asset-utils";
 
+// List of EVM chains that can use Base address
+const EVM_CHAINS = ['ETH', 'BASE', 'AVAX', 'BSC'];
+
 interface Pool {
   asset: string;
   status: string;
@@ -73,12 +76,21 @@ interface SwapFormProps {
 
 export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true, onSettingsChange }: SwapFormProps) {
   const { toast } = useToast();
-  const { provider } = useWeb3();
+  const { provider, account } = useWeb3();
   const [loading, setLoading] = useState(false);
   const [destinationAssets, setDestinationAssets] = useState<Record<string, AssetConfig>>({});
   const [assetPrices, setAssetPrices] = useState<Record<string, string>>({});
   const [pricesLoading, setPricesLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+
+  const form = useForm<SwapFormValues>({
+    resolver: zodResolver(swapSchema),
+    defaultValues: {
+      amount: "1",
+      destinationAddress: "",
+      destinationAsset: 'BTC.BTC',
+    },
+  });
 
   // Reset form when fromAsset changes
   useEffect(() => {
@@ -146,14 +158,19 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
     fetchPools();
   }, [toast]);
 
-  const form = useForm<SwapFormValues>({
-    resolver: zodResolver(swapSchema),
-    defaultValues: {
-      amount: "1",
-      destinationAddress: "",
-      destinationAsset: 'BTC.BTC',
-    },
-  });
+  // Set up a watcher for the destination asset to auto-fill EVM addresses
+  const selectedAsset = form.watch('destinationAsset');
+  
+  // When the selected asset or available assets change, check if we should auto-fill the Base address
+  useEffect(() => {
+    if (!selectedAsset || !account || Object.keys(destinationAssets).length === 0) return;
+    
+    const assetConfig = destinationAssets[selectedAsset];
+    if (assetConfig && EVM_CHAINS.includes(assetConfig.chain)) {
+      // Auto-fill the Base address for EVM chains
+      form.setValue('destinationAddress', account);
+    }
+  }, [selectedAsset, destinationAssets, account, form]);
 
   const settingsForm = useForm<SettingsValues>({
     resolver: zodResolver(settingsSchema),
@@ -378,6 +395,7 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
                 const selectedAsset = form.watch('destinationAsset');
                 const assetConfig = destinationAssets[selectedAsset];
                 const chain = assetConfig?.chain || selectedAsset.split('.')[0];
+                const isEvmChain = EVM_CHAINS.includes(chain);
                 
                 return (
                   <FormItem className="space-y-3">
@@ -387,6 +405,11 @@ export function SwapForm({ onQuoteReceived, fromAsset, settings, expanded = true
                           <img src={assetConfig.chainLogo} alt={chain} className="h-5 w-5" />
                         )}
                         <span>{chain} Address</span>
+                        {isEvmChain && account && (
+                          <span className="text-xs text-green-600 font-normal ml-1">
+                            (Using Base address)
+                          </span>
+                        )}
                       </div>
                     </FormLabel>
                     <FormControl>
