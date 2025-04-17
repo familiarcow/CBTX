@@ -125,20 +125,13 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
 
   // Initialize audio element
   useEffect(() => {
-    // Try different paths to find the sound file 
-    const possiblePaths = [
-      "/client/images/coin.mp3",        // Absolute from root
-      "client/images/coin.mp3",         // Relative
-      "/images/coin.mp3",               // In public folder
-      "../images/coin.mp3",             // One level up
-      "../client/images/coin.mp3"       // Another possibility  
-    ];
+    // Sound file is in the public/sounds directory
+    const soundPath = "/sounds/coin.mp3";  // Public directory is automatically served at root
     
-    // Try to load the audio from different paths
-    const audio = new Audio(possiblePaths[0]);
+    // Create and set up the audio element
+    const audio = new Audio(soundPath);
     audio.addEventListener('error', (e) => {
-      console.log(`Audio failed to load from ${possiblePaths[0]}:`, e);
-      // Could try other paths here if needed
+      console.error(`Audio failed to load from ${soundPath}:`, e);
     });
     
     audioRef.current = audio;
