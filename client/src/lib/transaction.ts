@@ -19,7 +19,7 @@ type TransactionParams = {
 };
 
 // Helper function to trigger balance refresh with delay
-const triggerBalanceRefresh = (delayMs = 500) => {
+const triggerBalanceRefresh = (delayMs = 2000) => {
   setTimeout(() => {
     window.dispatchEvent(refreshBalancesEvent);
   }, delayMs);
