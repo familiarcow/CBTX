@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowUpRight, CheckCircle2, Clock, Loader2 } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Clock, Loader2, Copy } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import ReactConfetti from "react-confetti";
 import { useToast } from "@/hooks/use-toast";
@@ -35,28 +35,14 @@ interface SwapStageStatus {
   };
 }
 
-interface StageTimers {
-  inbound_observed?: {
-    startTime: number;
-    endTime?: number;
-  };
-  inbound_confirmation_counted?: {
-    startTime: number;
-    endTime?: number;
-  };
-  inbound_finalised?: {
-    startTime: number;
-    endTime?: number;
-  };
-  swap_finalised?: {
-    startTime: number;
-    endTime?: number;
-  };
-  outbound_signed?: {
-    startTime: number;
-    endTime?: number;
-  };
-}
+// Array of stages in order of progression
+const STAGES_ORDER = [
+  'inbound_observed',
+  'inbound_confirmation_counted',
+  'inbound_finalised',
+  'swap_finalised',
+  'outbound_signed'
+];
 
 export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
   const [swapStages, setSwapStages] = useState<SwapStageStatus | null>(null);
@@ -67,14 +53,83 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [elapsedTime, setElapsedTime] = useState(0);
   const [timerStarted, setTimerStarted] = useState(false);
-  const [stageTimers, setStageTimers] = useState<StageTimers>({});
   const [currentStage, setCurrentStage] = useState<string | null>(null);
-  const [swapStartTime] = useState<number>(Date.now());
+  const [nodeCount, setNodeCount] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const completionTriggeredRef = useRef(false);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const swapStartTimeRef = useRef<number>(0);
   const { toast } = useToast();
+
+  // Fetch node count on component mount
+  useEffect(() => {
+    const fetchNodeCount = async () => {
+      try {
+        const response = await fetch("https://midgard.ninerealms.com/v2/network");
+        if (!response.ok) {
+          throw new Error("Failed to fetch node count");
+        }
+        const data = await response.json();
+        if (data && data.activeNodeCount) {
+          setNodeCount(parseInt(data.activeNodeCount, 10));
+        }
+      } catch (err) {
+        console.error("Error fetching node count:", err);
+      }
+    };
+    
+    fetchNodeCount();
+  }, []);
+
+  // Calculate needed confirmations (2/3 of node count, rounded up)
+  const getNeededConfirmations = (): number => {
+    if (nodeCount === 0) return 0;
+    return Math.ceil((2/3) * nodeCount);
+  };
+
+  // Initialize swap start time only once
+  useEffect(() => {
+    // Only set the start time once when component first mounts
+    if (swapStartTimeRef.current === 0 && thorchainTxId) {
+      swapStartTimeRef.current = Date.now();
+    }
+  }, [thorchainTxId]);
+
+  // Handle the timer independently of the main component rerenders
+  useEffect(() => {
+    // If the component remounts or updates after completion, don't restart the timer
+    if (isCompleted || !thorchainTxId) return;
+    
+    // Don't start timer if swapStartTimeRef is not set
+    if (swapStartTimeRef.current === 0) return;
+    
+    // Clear any existing interval to prevent duplicates
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+    }
+    
+    // Create a timer that updates elapsed time every second
+    const updateElapsedTime = () => {
+      const currentElapsed = Math.floor((Date.now() - swapStartTimeRef.current) / 1000);
+      setElapsedTime(currentElapsed);
+    };
+    
+    // Update immediately for the first time
+    updateElapsedTime();
+    
+    // Then set up interval for subsequent updates
+    timerIntervalRef.current = setInterval(updateElapsedTime, 1000);
+    setTimerStarted(true);
+    
+    // Clean up on unmount or when swap completes
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    };
+  }, [thorchainTxId, isCompleted]);
 
   // Update container size on resize
   useEffect(() => {
@@ -90,32 +145,6 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
     return () => window.removeEventListener("resize", updateContainerSize);
   }, []);
 
-  // Start and manage the timer
-  useEffect(() => {
-    // Start timer when component mounts and we have a txId
-    if (thorchainTxId && !timerStarted && !isCompleted) {
-      setTimerStarted(true);
-      timerIntervalRef.current = setInterval(() => {
-        setElapsedTime(Math.floor((Date.now() - swapStartTime) / 1000));
-      }, 1000);
-    }
-    
-    // Clean up timer when swap completes or component unmounts
-    return () => {
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
-      }
-    };
-  }, [thorchainTxId, timerStarted, isCompleted, swapStartTime]);
-
-  // Stop timer when swap completes
-  useEffect(() => {
-    if (isCompleted && timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
-    }
-  }, [isCompleted]);
-
   // Format elapsed time in a human-readable format
   const formatElapsedTime = (seconds: number): string => {
     if (seconds < 60) {
@@ -129,15 +158,6 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
       const mins = Math.floor((seconds % 3600) / 60);
       return `${hours}h ${mins}m`;
     }
-  };
-
-  // Calculate stage duration
-  const getStageElapsedTime = (stageName: string): number => {
-    const stageData = stageTimers[stageName as keyof StageTimers];
-    if (!stageData) return 0;
-    
-    const endTime = stageData.endTime || Date.now();
-    return Math.floor((endTime - stageData.startTime) / 1000);
   };
 
   // Handle swap completion effects
@@ -164,97 +184,74 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
     completionTriggeredRef.current = true;
   };
 
-  // Update stage timers when status changes
-  const updateStageTimers = (newStages: SwapStageStatus, prevStages: SwapStageStatus | null) => {
-    const updatedTimers = { ...stageTimers };
-    const now = Date.now();
+  // Update stage status when changes occur
+  const updateStageStatus = (newStages: SwapStageStatus) => {
     let currentStageName: string | null = null;
 
-    // Helper to check if a stage just started
-    const stageStarted = (stage: string, started: boolean, prevStarted?: boolean) => {
-      return started && (!prevStages || !prevStages[stage as keyof SwapStageStatus] || prevStarted === false);
-    };
-
-    // Helper to check if a stage just completed
-    const stageCompleted = (stage: string, completed: boolean, prevCompleted?: boolean) => {
-      return completed && prevStages && prevStages[stage as keyof SwapStageStatus] && !prevCompleted;
-    };
-
-    // Check inbound_observed
-    if (newStages.inbound_observed?.started) {
-      if (!updatedTimers.inbound_observed) {
-        updatedTimers.inbound_observed = { startTime: now };
-      }
-      if (newStages.inbound_observed?.completed && !updatedTimers.inbound_observed.endTime) {
-        updatedTimers.inbound_observed.endTime = now;
-      }
-      if (!newStages.inbound_observed?.completed) {
-        currentStageName = 'inbound_observed';
-      }
-    }
-
-    // Check inbound_confirmation_counted
-    if (newStages.inbound_confirmation_counted) {
-      if (newStages.inbound_observed?.completed && !updatedTimers.inbound_confirmation_counted) {
-        updatedTimers.inbound_confirmation_counted = { startTime: now };
-      }
-      if (newStages.inbound_confirmation_counted?.completed && updatedTimers.inbound_confirmation_counted && !updatedTimers.inbound_confirmation_counted.endTime) {
-        if (updatedTimers.inbound_confirmation_counted) {
-          updatedTimers.inbound_confirmation_counted.endTime = now;
-        }
-      }
-      if (!newStages.inbound_confirmation_counted?.completed && newStages.inbound_observed?.completed) {
-        currentStageName = 'inbound_confirmation_counted';
-      }
-    }
-
-    // Check inbound_finalised
-    if (newStages.inbound_finalised) {
-      if (newStages.inbound_confirmation_counted?.completed && !updatedTimers.inbound_finalised) {
-        updatedTimers.inbound_finalised = { startTime: now };
-      }
-      if (newStages.inbound_finalised?.completed && updatedTimers.inbound_finalised && !updatedTimers.inbound_finalised.endTime) {
-        if (updatedTimers.inbound_finalised) {
-          updatedTimers.inbound_finalised.endTime = now;
-        }
-      }
-      if (!newStages.inbound_finalised?.completed && newStages.inbound_confirmation_counted?.completed) {
-        currentStageName = 'inbound_finalised';
-      }
-    }
-
-    // Check swap_finalised
-    if (newStages.swap_finalised) {
-      if (newStages.inbound_finalised?.completed && !updatedTimers.swap_finalised) {
-        updatedTimers.swap_finalised = { startTime: now };
-      }
-      if (newStages.swap_finalised?.completed && updatedTimers.swap_finalised && !updatedTimers.swap_finalised.endTime) {
-        if (updatedTimers.swap_finalised) {
-          updatedTimers.swap_finalised.endTime = now;
-        }
-      }
-      if (!newStages.swap_finalised?.completed && newStages.inbound_finalised?.completed) {
-        currentStageName = 'swap_finalised';
-      }
-    }
-
-    // Check outbound_signed
+    // Step 5 - Check outbound_signed first - this is the last stage
     if (newStages.outbound_signed) {
-      if (newStages.swap_finalised?.completed && !updatedTimers.outbound_signed) {
-        updatedTimers.outbound_signed = { startTime: now };
-      }
-      if (newStages.outbound_signed?.completed && updatedTimers.outbound_signed && !updatedTimers.outbound_signed.endTime) {
-        if (updatedTimers.outbound_signed) {
-          updatedTimers.outbound_signed.endTime = now;
-        }
-      }
-      if (!newStages.outbound_signed?.completed && newStages.swap_finalised?.completed) {
+      if (newStages.outbound_signed?.completed === false) {
         currentStageName = 'outbound_signed';
       }
     }
 
-    setStageTimers(updatedTimers);
+    // Step 4 - Check swap_finalised
+    if (newStages.swap_finalised) {
+      if (!newStages.outbound_signed && newStages.swap_finalised?.completed === true) {
+        currentStageName = 'swap_finalised';
+      } else if (newStages.swap_finalised?.completed === false) {
+        currentStageName = 'swap_finalised';
+      }
+    }
+
+    // Step 3 - Check inbound_finalised
+    if (newStages.inbound_finalised) {
+      if (!newStages.swap_finalised && newStages.inbound_finalised?.completed === true) {
+        currentStageName = 'inbound_finalised';
+      } else if (newStages.inbound_finalised?.completed === false) {
+        currentStageName = 'inbound_finalised';
+      }
+    }
+
+    // Step 2 - Check inbound_confirmation_counted
+    if (newStages.inbound_confirmation_counted) {
+      if (!newStages.inbound_finalised && newStages.inbound_confirmation_counted?.completed === true) {
+        currentStageName = 'inbound_confirmation_counted';
+      } else if (newStages.inbound_confirmation_counted?.completed === false) {
+        currentStageName = 'inbound_confirmation_counted';
+      }
+    }
+
+    // Step 1 - Check inbound_observed first (this is the first stage)
+    if (newStages.inbound_observed) {
+      if (!newStages.inbound_confirmation_counted && newStages.inbound_observed?.completed === true) {
+        currentStageName = 'inbound_observed';
+      } else if (newStages.inbound_observed?.completed === false || newStages.inbound_observed?.started === false) {
+        currentStageName = 'inbound_observed';
+      }
+    }
+
     setCurrentStage(currentStageName);
+  };
+
+  // Helper function to check if a stage is completed
+  const isStageCompleted = (stageName: string): boolean => {
+    if (!swapStages) return false;
+    
+    switch (stageName) {
+      case 'inbound_observed':
+        return !!swapStages.inbound_observed?.completed;
+      case 'inbound_confirmation_counted':
+        return !!swapStages.inbound_confirmation_counted?.completed;
+      case 'inbound_finalised':
+        return !!swapStages.inbound_finalised?.completed;
+      case 'swap_finalised':
+        return !!swapStages.swap_finalised?.completed;
+      case 'outbound_signed':
+        return !!swapStages.outbound_signed?.completed;
+      default:
+        return false;
+    }
   };
 
   // Fetch swap status from thorchain API
@@ -319,8 +316,8 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
         };
       }
       
-      // Update stage timers before updating the stages
-      updateStageTimers(validData, swapStages);
+      // Update stage status before updating the stages
+      updateStageStatus(validData);
       
       // We now set swap stages with our safely constructed object
       setSwapStages(validData);
@@ -382,26 +379,73 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
   const getCurrentStepMessage = (): string => {
     if (!swapStages) return "Initializing...";
     
-    // Check in reverse order to find the last stage that exists in the response
+    // Check stages in the correct sequence order
     if (swapStages.outbound_signed?.completed === true) {
       return "Swap completed successfully";
     } else if (swapStages.outbound_signed) {
-      return "Swap completed. Signing outbound transaction";
+      // Include additional properties if available
+      const scheduledHeight = (swapStages.outbound_signed as any)?.scheduled_outbound_height;
+      const blocksSince = (swapStages.outbound_signed as any)?.blocks_since_scheduled;
+      
+      if (scheduledHeight && blocksSince !== undefined) {
+        return `Waiting for outbound transaction. (${blocksSince} blocks since scheduled)`;
+      }
+      return "Swap completed. Processing outbound transaction";
     } else if (swapStages.swap_finalised?.completed === true) {
       return "Swap completed. Preparing outbound transaction";
     } else if (swapStages.swap_finalised) {
-      return "Swap in progress";
+      return "Finalizing swap";
     } else if (swapStages.inbound_finalised?.completed === true) {
       return "Inbound finalized. Preparing swap";
+    } else if (swapStages.inbound_finalised) {
+      return "Finalizing inbound transaction";
     } else if (swapStages.inbound_confirmation_counted?.completed === true) {
-      return "Confirmations received. Finalizing inbound transaction";
+      return "Confirmations received. Preparing inbound finalization";
+    } else if (swapStages.inbound_confirmation_counted) {
+      const remainingSeconds = swapStages.inbound_confirmation_counted.remaining_confirmation_seconds;
+      if (remainingSeconds !== undefined && remainingSeconds > 0) {
+        return `Waiting for confirmations (${remainingSeconds}s remaining)`;
+      }
+      return "Counting confirmations";
     } else if (swapStages.inbound_observed?.completed === true) {
       return "Transaction observed. Awaiting confirmations";
+    } else if (swapStages.inbound_observed?.started === true) {
+      const observationCount = swapStages.inbound_observed.final_count;
+      const neededCount = getNeededConfirmations();
+      
+      if (observationCount !== undefined && neededCount > 0) {
+        return `Observing transaction (${observationCount}/${neededCount} confirmations)`;
+      }
+      return "Observing transaction";
     } else if (swapStages.inbound_observed?.started === false) {
-      return "Waiting for transaction to be observed...";
+      return "Waiting for transaction to be observed";
     } else {
       return "Initializing swap...";
     }
+  };
+
+  // Helper function to get the label for a stage
+  const getStageLabel = (stageName: string): string => {
+    switch (stageName) {
+      case 'inbound_observed':
+        return "Inbound Observed";
+      case 'inbound_confirmation_counted':
+        return "Confirmation Counts";
+      case 'inbound_finalised':
+        return "Inbound Finalized";
+      case 'swap_finalised':
+        return "Swap Finalized";
+      case 'outbound_signed':
+        return "Outbound Signed";
+      default:
+        return "Processing";
+    }
+  };
+
+  // Find the current active stage index
+  const getActiveStageIndex = (): number => {
+    if (!currentStage) return -1;
+    return STAGES_ORDER.indexOf(currentStage);
   };
 
   // Check if swap is fully completed - look directly for outbound_signed.completed
@@ -471,9 +515,24 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                 <div className="space-y-4">
                   <div className="flex flex-col gap-2">
                     <span className="text-sm text-gray-600 font-medium">Transaction ID</span>
-                    <code className="font-mono text-sm bg-white px-3 py-2 rounded-lg border border-gray-200 text-gray-800 break-all">
-                      {thorchainTxId}
-                    </code>
+                    <div className="flex items-center bg-white px-3 py-2 rounded-lg border border-gray-200">
+                      <code className="font-mono text-sm text-gray-800 break-all flex-1">
+                        {thorchainTxId}
+                      </code>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(thorchainTxId);
+                          toast({
+                            title: "Copied",
+                            description: "Transaction ID copied to clipboard",
+                          });
+                        }}
+                        className="ml-2 p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                        aria-label="Copy transaction ID"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                   
                   <div className="flex flex-col gap-2">
@@ -524,55 +583,25 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                               <Loader2 className="h-4 w-4 text-yellow-500" />
                             </motion.div>
                             <span className="font-medium">{getCurrentStepMessage()}</span>
-                            {currentStage && (
-                              <span className="text-xs text-gray-500 ml-auto">
-                                Current step: {formatElapsedTime(getStageElapsedTime(currentStage))}
-                              </span>
-                            )}
                           </div>
                           
                           <div className="space-y-3.5">
-                            {swapStages.inbound_observed && (
-                              <SwapStageItem 
-                                label="Inbound Observed" 
-                                isCompleted={!!swapStages.inbound_observed.completed}
-                                isStarted={swapStages.inbound_observed.started !== false}
-                                isActive={!swapStages.inbound_observed.completed && swapStages.inbound_observed.started !== false}
-                                duration={stageTimers.inbound_observed ? formatElapsedTime(getStageElapsedTime('inbound_observed')) : ''}
-                              />
-                            )}
-                            {swapStages.inbound_confirmation_counted && (
-                              <SwapStageItem 
-                                label="Confirmation Counts" 
-                                isCompleted={!!swapStages.inbound_confirmation_counted.completed}
-                                isActive={!swapStages.inbound_confirmation_counted.completed && swapStages.inbound_observed?.completed === true}
-                                duration={stageTimers.inbound_confirmation_counted ? formatElapsedTime(getStageElapsedTime('inbound_confirmation_counted')) : ''}
-                              />
-                            )}
-                            {swapStages.inbound_finalised && (
-                              <SwapStageItem 
-                                label="Inbound Finalized" 
-                                isCompleted={!!swapStages.inbound_finalised.completed}
-                                isActive={!swapStages.inbound_finalised.completed && swapStages.inbound_confirmation_counted?.completed === true}
-                                duration={stageTimers.inbound_finalised ? formatElapsedTime(getStageElapsedTime('inbound_finalised')) : ''}
-                              />
-                            )}
-                            {swapStages.swap_finalised && (
-                              <SwapStageItem 
-                                label="Swap Finalized" 
-                                isCompleted={!!swapStages.swap_finalised.completed}
-                                isActive={!swapStages.swap_finalised.completed && swapStages.inbound_finalised?.completed === true}
-                                duration={stageTimers.swap_finalised ? formatElapsedTime(getStageElapsedTime('swap_finalised')) : ''}
-                              />
-                            )}
-                            {swapStages.outbound_signed && (
-                              <SwapStageItem 
-                                label="Outbound Signed" 
-                                isCompleted={!!swapStages.outbound_signed.completed}
-                                isActive={!swapStages.outbound_signed.completed && swapStages.swap_finalised?.completed === true}
-                                duration={stageTimers.outbound_signed ? formatElapsedTime(getStageElapsedTime('outbound_signed')) : ''}
-                              />
-                            )}
+                            {/* Only display completed stages */}
+                            {STAGES_ORDER.map((stage, index) => {
+                              // Only show stages that are completed
+                              if (isStageCompleted(stage)) {
+                                return (
+                                  <SwapStageItem
+                                    key={stage}
+                                    label={getStageLabel(stage)}
+                                    isCompleted={true}
+                                    isActive={false}
+                                    isStarted={true}
+                                  />
+                                );
+                              }
+                              return null;
+                            })}
                           </div>
                         </div>
                       </>
@@ -611,24 +640,17 @@ function SwapStageItem({
   label, 
   isCompleted, 
   isStarted = true, 
-  isActive = false,
-  duration = '' 
+  isActive = false
 }: { 
   label: string; 
   isCompleted: boolean; 
   isStarted?: boolean; 
   isActive?: boolean;
-  duration?: string;
 }) {
   return (
     <div className="flex items-center justify-between">
       <span className={`text-sm ${isActive ? 'text-gray-800 font-medium' : 'text-gray-600'}`}>{label}</span>
       <div className="flex items-center gap-2">
-        {duration && (
-          <span className={`text-xs ${isActive ? 'text-yellow-600' : isCompleted ? 'text-green-600' : 'text-gray-500'}`}>
-            {duration}
-          </span>
-        )}
         <div className={`flex items-center ${isCompleted ? 'text-green-500' : isActive ? 'text-yellow-500' : isStarted ? 'text-yellow-400' : 'text-gray-400'}`}>
           {isCompleted ? (
             <CheckCircle2 className="h-5 w-5" />
