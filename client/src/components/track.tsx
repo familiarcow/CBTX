@@ -493,6 +493,24 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                   <Clock className="h-4 w-4" />
                   <span>Completed in {formatElapsedTime(elapsedTime)}</span>
                 </div>
+                <div className="flex items-center gap-2 text-gray-600 z-10 mb-4">
+                  <div className="font-mono text-xs bg-gray-100 px-3 py-1.5 rounded-lg truncate max-w-full overflow-hidden">
+                    {thorchainTxId}
+                  </div>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(thorchainTxId);
+                      toast({
+                        title: "Copied",
+                        description: "Transaction ID copied to clipboard",
+                      });
+                    }}
+                    className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors flex-shrink-0"
+                    aria-label="Copy transaction ID"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
+                </div>
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -516,7 +534,7 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                   <div className="flex flex-col gap-2">
                     <span className="text-sm text-gray-600 font-medium">Transaction ID</span>
                     <div className="flex items-center bg-white px-3 py-2 rounded-lg border border-gray-200">
-                      <code className="font-mono text-sm text-gray-800 break-all flex-1">
+                      <code className="font-mono text-sm text-gray-800 truncate flex-1 overflow-hidden">
                         {thorchainTxId}
                       </code>
                       <button 
@@ -527,7 +545,7 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                             description: "Transaction ID copied to clipboard",
                           });
                         }}
-                        className="ml-2 p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                        className="ml-2 p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors flex-shrink-0"
                         aria-label="Copy transaction ID"
                       >
                         <Copy className="h-4 w-4" />
@@ -547,12 +565,6 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                   <div className="flex flex-col gap-3 pt-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600 font-medium">Swap Progress</span>
-                      {timerStarted && (
-                        <div className="flex items-center gap-1 text-sm text-gray-500">
-                          <Clock className="h-3.5 w-3.5" />
-                          <span>{formatElapsedTime(elapsedTime)}</span>
-                        </div>
-                      )}
                     </div>
                     
                     {isLoading && !swapStages && (
