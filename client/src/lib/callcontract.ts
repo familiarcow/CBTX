@@ -141,12 +141,54 @@ export async function approveERC20(
   amount: string,
   fromAddress: string
 ) {
+  console.log('=== ERC20 APPROVAL PROCESS START ===');
+  console.log('Environment details:', {
+    userAgent: navigator.userAgent,
+    hostname: window.location.hostname,
+    origin: window.location.origin,
+    timestamp: new Date().toISOString()
+  });
+
   console.log('Starting ERC20 approval process with params:', {
     tokenAddress,
     spenderAddress,
     amount,
-    fromAddress
+    fromAddress,
+    web3Provider: web3.currentProvider
   });
+
+  // Log Web3 provider details
+  console.log('Web3 provider details:', {
+    isProvider: !!web3.currentProvider,
+    providerType: web3.currentProvider?.constructor?.name,
+    // @ts-ignore
+    isMetaMask: web3.currentProvider?.isMetaMask,
+    // @ts-ignore
+    isCoinbaseWallet: web3.currentProvider?.isCoinbaseWallet,
+    // @ts-ignore
+    chainId: web3.currentProvider?.chainId
+  });
+
+  // Check network connection
+  try {
+    const networkId = await web3.eth.net.getId();
+    const chainId = await web3.eth.getChainId();
+    const blockNumber = await web3.eth.getBlockNumber();
+    
+    console.log('Network connectivity check:', {
+      networkId: networkId.toString(),
+      chainId: chainId.toString(),
+      blockNumber: blockNumber.toString(),
+      success: true
+    });
+  } catch (networkError) {
+    console.error('Network connectivity check failed:', {
+      error: networkError,
+      message: (networkError as Error).message,
+      stack: (networkError as Error).stack
+    });
+    throw new Error(`Network connectivity failed: ${(networkError as Error).message}`);
+  }
 
   // Validate input parameters
   if (!web3) {
@@ -167,42 +209,176 @@ export async function approveERC20(
 
   console.log('Creating token contract instance...');
   const tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddress);
-  console.log('Token contract instance created');
+  console.log('Token contract instance created successfully');
   
   try {
     // Check current allowance
     console.log('Checking current allowance...');
+    console.log('Calling allowance method with:', {
+      owner: fromAddress,
+      spender: spenderAddress,
+      method: 'allowance'
+    });
+
     const currentAllowance: string = await tokenContract.methods
       .allowance(fromAddress, spenderAddress)
       .call();
-    console.log('Current allowance:', currentAllowance);
+    
+    console.log('Current allowance retrieved:', {
+      rawAllowance: currentAllowance,
+      allowanceBigInt: BigInt(currentAllowance).toString(),
+      requiredAmount: amount,
+      requiredAmountBigInt: BigInt(amount).toString(),
+      isSufficient: BigInt(currentAllowance) >= BigInt(amount)
+    });
 
     if (BigInt(currentAllowance) >= BigInt(amount)) {
-      console.log('Sufficient allowance already exists');
+      console.log('✅ Sufficient allowance already exists - skipping approval');
       throw new Error('Sufficient allowance already exists');
     }
 
-    console.log('Getting gas price for approval...');
-    const gasPrice = await web3.eth.getGasPrice();
-    console.log('Approval gas price:', gasPrice);
+    console.log('❌ Insufficient allowance - proceeding with approval');
+
+    // Get network details for gas estimation
+    console.log('Getting network details for gas estimation...');
+    const [gasPrice, baseFeePerGas, blockNumber] = await Promise.all([
+      web3.eth.getGasPrice().catch(e => {
+        console.warn('Failed to get gas price:', e);
+        return null;
+      }),
+      web3.eth.getBlock('latest').then(block => block.baseFeePerGas?.toString()).catch(e => {
+        console.warn('Failed to get base fee:', e);
+        return null;
+      }),
+      web3.eth.getBlockNumber()
+    ]);
+
+    console.log('Network gas details:', {
+      gasPrice: gasPrice?.toString(),
+      baseFeePerGas,
+      blockNumber: blockNumber.toString(),
+      timestamp: new Date().toISOString()
+    });
+
+    // Estimate gas for approval
+    console.log('Estimating gas for approval transaction...');
+    let gasEstimate;
+    try {
+      gasEstimate = await tokenContract.methods
+        .approve(spenderAddress, amount)
+        .estimateGas({ from: fromAddress });
+      
+      console.log('Gas estimation successful:', {
+        gasEstimate: gasEstimate.toString(),
+        fromAddress
+      });
+    } catch (gasError) {
+      console.error('Gas estimation failed:', {
+        error: gasError,
+        message: (gasError as Error).message,
+        // @ts-ignore
+        code: gasError.code,
+        // @ts-ignore
+        data: gasError.data
+      });
+      throw new Error(`Gas estimation failed: ${(gasError as Error).message}`);
+    }
+
+    // Prepare transaction parameters
+    const finalGasPrice = gasPrice ? gasPrice.toString() : '1000000000'; // 1 gwei fallback
+    const finalGasLimit = Math.floor(Number(gasEstimate) * 1.2).toString(); // 20% buffer
+
+    console.log('Preparing approval transaction with parameters:', {
+      method: 'approve',
+      spender: spenderAddress,
+      amount: amount,
+      from: fromAddress,
+      gasPrice: finalGasPrice,
+      gasLimit: finalGasLimit,
+      gasEstimate: gasEstimate.toString()
+    });
 
     // Send approve transaction
-    console.log('Sending approve transaction...');
-    const tx = await tokenContract.methods
+    console.log('🚀 Sending approve transaction...');
+    const txPromise = tokenContract.methods
       .approve(spenderAddress, amount)
       .send({
         from: fromAddress,
-        gasPrice: gasPrice.toString(),
+        gas: finalGasLimit,
+        gasPrice: finalGasPrice,
       });
+
+    // Add detailed event logging
+    txPromise
+      .on('sending', (payload: any) => {
+        console.log('📤 Transaction sending:', {
+          payload,
+          timestamp: new Date().toISOString()
+        });
+      })
+      .on('sent', (payload: any) => {
+        console.log('📨 Transaction sent to network:', {
+          payload,
+          timestamp: new Date().toISOString()
+        });
+      })
+      .on('transactionHash', (hash: string) => {
+        console.log('🔗 Transaction hash received:', {
+          hash,
+          explorerUrl: `https://basescan.org/tx/${hash}`,
+          timestamp: new Date().toISOString()
+        });
+      })
+      .on('receipt', (receipt: any) => {
+        console.log('✅ Transaction receipt received:', {
+          receipt,
+          status: receipt.status,
+          gasUsed: receipt.gasUsed,
+          timestamp: new Date().toISOString()
+        });
+      })
+      .on('error', (error: any) => {
+        console.error('❌ Transaction error event:', {
+          error,
+          message: error.message,
+          code: error.code,
+          data: error.data,
+          timestamp: new Date().toISOString()
+        });
+      });
+
+    const tx = await txPromise;
     
-    console.log('Approval transaction completed:', tx);
+    console.log('✅ Approval transaction completed successfully:', {
+      transactionHash: tx.transactionHash,
+      blockNumber: tx.blockNumber,
+      gasUsed: tx.gasUsed,
+      status: tx.status,
+      timestamp: new Date().toISOString()
+    });
+
+    console.log('=== ERC20 APPROVAL PROCESS END (SUCCESS) ===');
     return tx;
   } catch (error) {
-    console.error('Error in approveERC20:', error);
-    console.error('Error details:', {
+    console.error('=== ERC20 APPROVAL PROCESS END (ERROR) ===');
+    console.error('Detailed error information:', {
+      error,
       message: (error as Error).message,
-      stack: (error as Error).stack
+      stack: (error as Error).stack,
+      // @ts-ignore
+      code: error.code,
+      // @ts-ignore
+      data: error.data,
+      // @ts-ignore
+      reason: error.reason,
+      timestamp: new Date().toISOString()
     });
+
+    // Re-throw with more context if it's not the "sufficient allowance" case
+    if ((error as Error).message !== 'Sufficient allowance already exists') {
+      throw new Error(`Approval failed: ${(error as Error).message}`);
+    }
+    
     throw error;
   }
 }

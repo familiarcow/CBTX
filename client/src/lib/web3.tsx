@@ -35,6 +35,49 @@ const ethereum = coinbaseWallet.makeWeb3Provider();
 // Initialize Web3 with the provider
 const web3 = new Web3(ethereum as any);
 
+// Add logging for debugging RPC issues
+console.log('=== WEB3 PROVIDER INITIALIZATION ===');
+console.log('Environment details:', {
+  hostname: typeof window !== 'undefined' ? window.location.hostname : 'server',
+  origin: typeof window !== 'undefined' ? window.location.origin : 'server',
+  userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'server',
+  timestamp: new Date().toISOString()
+});
+
+console.log('Web3 provider configuration:', {
+  appName: APP_NAME,
+  appLogoUrl: APP_LOGO_URL,
+  defaultChainId: DEFAULT_CHAIN_ID,
+  rpcUrl: RPC_URL,
+  supportedChainIds: APP_SUPPORTED_CHAIN_IDS,
+  providerType: ethereum?.constructor?.name || 'Unknown',
+  // @ts-ignore
+  isCoinbaseWallet: ethereum?.isCoinbaseWallet,
+  // @ts-ignore
+  isMetaMask: ethereum?.isMetaMask
+});
+
+// Test basic connectivity
+if (typeof window !== 'undefined') {
+  ethereum?.request?.({ method: 'eth_chainId' })
+    .then((chainId: unknown) => {
+      const chainIdStr = chainId as string;
+      console.log('Initial chain ID check:', {
+        chainId: chainIdStr,
+        chainIdDecimal: parseInt(chainIdStr, 16),
+        expectedChainId: DEFAULT_CHAIN_ID,
+        isCorrectChain: parseInt(chainIdStr, 16) === DEFAULT_CHAIN_ID
+      });
+    })
+    .catch((error: any) => {
+      console.error('Initial chain ID check failed:', {
+        error,
+        message: error.message,
+        code: error.code
+      });
+    });
+}
+
 interface Web3ContextType {
   account: string | null;
   connect: () => Promise<void>;
