@@ -4,8 +4,8 @@ import { CoinbaseWalletSDK } from "@coinbase/wallet-sdk";
 import type { CoinbaseWalletProvider } from "@coinbase/wallet-sdk";
 import Web3 from 'web3';
 
-const APP_NAME = 'cbBTC Swap';
-const APP_LOGO_URL = '';
+const APP_NAME = 'FromBase.xyz';
+const APP_LOGO_URL = 'https://frombase.xyz/images/frombase-logo.png';
 const DEFAULT_CHAIN_ID = 8453;
 const RPC_URL = 'https://mainnet.base.org';
 const APP_SUPPORTED_CHAIN_IDS = [DEFAULT_CHAIN_ID];
