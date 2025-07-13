@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import logo from '/images/fromBase-text.svg';
+import logo from '/images/frombase-text.svg';
 
 export function LogoHeader() {
   const handleLogoClick = () => {
