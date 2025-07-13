@@ -9,6 +9,7 @@ export const ASSET_LOGOS: Record<string, string> = {
   'GAIA.ATOM': new URL('/images/asset-logos/cosmos-atom-logo.svg', import.meta.url).href,
   'DOGE.DOGE': new URL('/images/asset-logos/dogecoin-doge-logo.svg', import.meta.url).href,
   'THOR.RUNE': new URL('/images/asset-logos/RUNE-ICON.svg', import.meta.url).href,
+  'THOR.RUJI': new URL('/images/asset-logos/RUJI.svg', import.meta.url).href,
   'ETH.USDC-0XA0B86991C6218B36C1D19D4A2E9EB0CE3606EB48': new URL('/images/asset-logos/usd-coin-usdc-logo.svg', import.meta.url).href,
   'ETH.USDT-0XDAC17F958D2EE523A2206206994597C13D831EC7': new URL('/images/asset-logos/tether-usdt-logo.svg', import.meta.url).href,
   'ETH.WBTC-0X2260FAC5E5542A773AA44FBCFEDF7C193BC2C599': new URL('/images/asset-logos/wrapped-bitcoin-wbtc-logo.svg', import.meta.url).href,
@@ -17,6 +18,8 @@ export const ASSET_LOGOS: Record<string, string> = {
   'BSC.USDC-0X8AC76A51CC950D9822D68B83FE1AD97B32CD580D': new URL('/images/asset-logos/usd-coin-usdc-logo.svg', import.meta.url).href,
   'BSC.USDT-0X55D398326F99059FF775485246999027B3197955': new URL('/images/asset-logos/tether-usdt-logo.svg', import.meta.url).href,
   'BSC.TWT-0X4B0F1812E5DF2A09796481FF14017E6005508003': new URL('/images/asset-logos/twt-logo.png', import.meta.url).href,
+  'BSC.BUSD-0XE9E7CEA3DEDCA5984780BAFC599BD69ADD087D56': new URL('/images/asset-logos/binance-usd-busd-logo.svg', import.meta.url).href,
+  'BSC.BTCB-0X7130D2A12B9BCBFAE4F2634D864A1EE1CE3EAD9C': new URL('/images/asset-logos/bitcoin-btc-logo.svg', import.meta.url).href,
   'ETH.DAI-0X6B175474E89094C44DA98B954EEDEAC495271D0F': new URL('/images/asset-logos/multi-collateral-dai-dai-logo.svg', import.meta.url).href,
   'ETH.GUSD-0X056FD409E1D7A124BD7017459DFEA2F387B6D5CD': new URL('/images/asset-logos/gemini-dollar-gusd-logo.svg', import.meta.url).href,
   'ETH.LUSD-0X5F98805A4E8BE255A32880FDEC7F6728C6568BA0': new URL('/images/asset-logos/liquity-usd-logo.svg', import.meta.url).href,
@@ -33,7 +36,9 @@ export const ASSET_LOGOS: Record<string, string> = {
   'ETH.THOR-0XA5F2211B9B8170F694421F2046281775E8468044': new URL('/images/asset-logos/thorswap-logo.png', import.meta.url).href,
   'ETH.VTHOR-0X815C23ECA83261B6EC689B60CC4A58B54BC24D8D': new URL('/images/asset-logos/thorswap-logo.png', import.meta.url).href,
   'ETH.XRUNE-0X69FA0FEE221AD11012BAB0FDB45D444D3D2CE71C': new URL('/images/asset-logos/xrune-logo.png', import.meta.url).href,
-  'ETH.TGT-0X108A850856DB3F85D0269A2693D896B394C80325': new URL('/images/asset-logos/tgt-logo.png', import.meta.url).href
+  'ETH.TGT-0X108A850856DB3F85D0269A2693D896B394C80325': new URL('/images/asset-logos/tgt-logo.png', import.meta.url).href,
+  'XRP.XRP': new URL('/images/asset-logos/xrp-xrp-logo.svg', import.meta.url).href,
+  'THOR.TCY': new URL('/images/asset-logos/TCY.svg', import.meta.url).href
 } as const;
 
 // Define chain logo mapping
@@ -48,6 +53,8 @@ export const CHAIN_LOGOS: Record<string, string> = {
   'DOGE': new URL('/images/chain-logos/DOGE.svg', import.meta.url).href,
   'THOR': new URL('/images/chain-logos/THOR.svg', import.meta.url).href,
   'BASE': new URL('/images/chain-logos/BASE.svg', import.meta.url).href,
+  'XRP': new URL('/images/chain-logos/XRP.svg', import.meta.url).href,
+  'TRON': new URL('/images/chain-logos/TRON.svg', import.meta.url).href,
 } as const;
 
 export interface AssetConfig {
