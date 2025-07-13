@@ -11,6 +11,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { QuoteResponse } from "@/lib/thorchain";
+import { getAssetAddress } from "@/lib/constants";
+import { getAssetLogo } from "@/lib/asset-utils";
 
 interface SwapPanelProps {
   onQuoteReceived: (quote: QuoteResponse, destAsset: string) => void;
@@ -61,20 +63,6 @@ export function SwapPanel({
     setShowSettings(false);
   };
 
-  // Get asset logo based on selected asset
-  const getAssetLogo = (asset: 'ETH' | 'USDC' | 'cbBTC') => {
-    switch (asset) {
-      case 'ETH':
-        return '/images/eth-logo.svg';
-      case 'USDC':
-        return '/images/usd-coin-usdc-logo.svg';
-      case 'cbBTC':
-        return '/images/cbbtc-logo.svg';
-      default:
-        return '';
-    }
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -91,7 +79,7 @@ export function SwapPanel({
                   <div className="flex items-center gap-1">
                     {(Number(quote.input_amount) / 1e8).toFixed(8)}{" "}
                     <img 
-                      src={getAssetLogo(selectedAsset)} 
+                      src={getAssetLogo(getAssetAddress(selectedAsset))} 
                       alt={selectedAsset} 
                       className="h-4 w-4 inline" 
                     />
