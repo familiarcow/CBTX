@@ -254,7 +254,7 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
     }
   };
 
-  // Fetch swap status from thorchain API
+  // Fetch swap status from thorchain API with fallback support
   const fetchSwapStatus = async () => {
     if (!thorchainTxId || isCompleted) return;
     
@@ -262,13 +262,27 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
     setError(null);
     
     try {
-      const response = await fetch(`https://thornode.ninerealms.com/thorchain/tx/stages/${thorchainTxId}`);
+      let response: Response;
+      let data: any;
       
-      if (!response.ok) {
-        throw new Error(`Status ${response.status}: Failed to fetch swap status`);
+      // Try primary endpoint first (liquify - more frequent updates)
+      try {
+        response = await fetch(`https://thornode.thorchain.liquify.com/thorchain/tx/stages/${thorchainTxId}`);
+        if (response.ok) {
+          data = await response.json();
+        } else {
+          throw new Error(`Liquify endpoint failed with status ${response.status}`);
+        }
+      } catch (err) {
+        console.warn("Primary endpoint (liquify) failed, trying fallback:", err);
+        
+        // Try fallback endpoint (ninerealms - more reliable)
+        response = await fetch(`https://thornode.ninerealms.com/thorchain/tx/stages/${thorchainTxId}`);
+        if (!response.ok) {
+          throw new Error(`Status ${response.status}: Failed to fetch swap status from both endpoints`);
+        }
+        data = await response.json();
       }
-      
-      const data = await response.json();
       
       // Create a new status object that intelligently handles missing fields
       // If a field doesn't exist in the API response, we'll set it to undefined
@@ -366,10 +380,10 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
     // Fetch immediately on mount
     fetchSwapStatus();
     
-    // Set up interval to fetch every 6 seconds
+    // Set up interval to fetch every 6.5 seconds
     const intervalId = setInterval(() => {
       fetchSwapStatus();
-    }, 6000);
+    }, 6500);
     
     // Clean up interval on unmount or when swap completes
     return () => clearInterval(intervalId);
