@@ -7,17 +7,19 @@ import { getTokenBalance, getEthBalance } from "@/lib/basescan";
 import { formatUnits } from "ethers";
 import { useConfig, useUSDValues } from '@/hooks/use-config';
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
+import { SUPPORTED_ASSETS } from "@/lib/constants";
 
 const TOKEN_ADDRESSES = {
-  ETH: "0x0000000000000000000000000000000000000000", // Native ETH
-  USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Base USDC
-  cbBTC: "0xcBB7C0000AB88b473b1F5afd9Ef808440eED33bF", // Base cbBTC
+  ETH: SUPPORTED_ASSETS.ETH.address,
+  USDC: SUPPORTED_ASSETS.USDC.address,
+  cbBTC: SUPPORTED_ASSETS.cbBTC.address,
 } as const;
 
 const TOKEN_DECIMALS = {
-  ETH: 18,
-  USDC: 6, // USDC uses 6 decimals
-  cbBTC: 8,
+  ETH: SUPPORTED_ASSETS.ETH.decimals,
+  USDC: SUPPORTED_ASSETS.USDC.decimals,
+  cbBTC: SUPPORTED_ASSETS.cbBTC.decimals,
 } as const;
 
 interface TokenBalanceProps {
@@ -27,15 +29,27 @@ interface TokenBalanceProps {
   logo?: string;
   chainLogo?: string;
   refreshKey?: number;
+  canLoad?: boolean;
+  onLoadingComplete?: (symbol: keyof typeof TOKEN_ADDRESSES) => void;
 }
 
-export function TokenBalance({ symbol, isSelected, onSelect, logo, chainLogo, refreshKey = 0 }: TokenBalanceProps) {
+export function TokenBalance({ 
+  symbol, 
+  isSelected, 
+  onSelect, 
+  logo, 
+  chainLogo, 
+  refreshKey = 0,
+  canLoad = true,
+  onLoadingComplete
+}: TokenBalanceProps) {
   const { data: config, isLoading: configLoading } = useConfig();
   const { data: prices, isLoading: pricesLoading, isError: pricesError } = useUSDValues();
   const { account } = useWeb3();
   const [balance, setBalance] = useState<string>("0");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   // Add debug logging
   console.log('TokenBalance Debug:', {
@@ -46,14 +60,8 @@ export function TokenBalance({ symbol, isSelected, onSelect, logo, chainLogo, re
     pricesLoading,
     pricesError,
     hasPrices: !!prices,
-  });
-
-  console.log('TokenBalance render:', {
-    symbol,
-    configLoading,
-    configError: error,
-    hasConfig: Boolean(config),
-    account
+    canLoad,
+    hasLoaded
   });
 
   // Calculate USD value
@@ -85,18 +93,28 @@ export function TokenBalance({ symbol, isSelected, onSelect, logo, chainLogo, re
     return usdValue;
   };
 
-  // Fetch balance when account, symbol, config, or refreshKey changes
+  // Fetch balance when account, symbol, config, canLoad, or refreshKey changes
   useEffect(() => {
     async function fetchBalance() {
       console.log('fetchBalance running:', {
         symbol,
         hasConfig: Boolean(config),
         hasAccount: Boolean(account),
+        canLoad,
+        hasLoaded,
         refreshKey
       });
 
-      if (!account || !config) {
-        setLoading(false);
+      // Don't fetch if we can't load yet, or if we already loaded (unless refresh triggered)
+      if (!canLoad || !account || (hasLoaded && refreshKey === 0)) {
+        return;
+      }
+
+      // If config is not available, show a more helpful error
+      if (!config) {
+        setError('API key not configured');
+        setHasLoaded(true);
+        onLoadingComplete?.(symbol);
         return;
       }
 
@@ -120,17 +138,47 @@ export function TokenBalance({ symbol, isSelected, onSelect, logo, chainLogo, re
         
         setBalance(displayBalance);
         setError(null);
+        setHasLoaded(true);
+        
+        // Notify parent that loading is complete
+        onLoadingComplete?.(symbol);
       } catch (error) {
         console.error(`Error fetching ${symbol} balance:`, error);
         setBalance('0');
-        setError(error instanceof Error ? error.message : 'Failed to fetch balance');
+        
+        // Show more user-friendly error messages
+        let errorMessage = 'Failed to fetch balance';
+        if (error instanceof Error) {
+          if (error.message.includes('API key')) {
+            errorMessage = 'API key issue';
+          } else if (error.message.includes('rate limit')) {
+            errorMessage = 'Rate limited';
+          } else if (error.message.includes('network')) {
+            errorMessage = 'Network error';
+          } else {
+            errorMessage = error.message;
+          }
+        }
+        
+        setError(errorMessage);
+        setHasLoaded(true);
+        
+        // Still notify completion even on error to allow next asset to load
+        onLoadingComplete?.(symbol);
       } finally {
         setLoading(false);
       }
     }
 
     fetchBalance();
-  }, [account, symbol, config, refreshKey]);
+  }, [account, symbol, config, canLoad, refreshKey, onLoadingComplete]);
+
+  // Reset hasLoaded when refreshKey changes
+  useEffect(() => {
+    if (refreshKey > 0) {
+      setHasLoaded(false);
+    }
+  }, [refreshKey]);
 
   return (
     <Card 
@@ -154,12 +202,35 @@ export function TokenBalance({ symbol, isSelected, onSelect, logo, chainLogo, re
               />
             )}
           </div>
-          <span className="text-sm font-medium text-gray-600">{symbol}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-600">{symbol}</span>
+            {loading && (
+              <Loader2 className="h-3 w-3 text-[#0052FF] animate-spin" />
+            )}
+          </div>
         </div>
-        {loading ? (
-          <Skeleton className="h-6 w-24 mt-1" />
+        
+        {!canLoad ? (
+          <div className="space-y-2">
+            <div className="text-xl font-semibold text-gray-400">
+              Waiting...
+            </div>
+            <div className="text-sm text-gray-400">
+              Loading in sequence
+            </div>
+          </div>
+        ) : loading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-24 mt-1" />
+            <Skeleton className="h-4 w-20" />
+          </div>
         ) : error ? (
-          <div className="text-sm text-red-500">{error}</div>
+          <div className="space-y-2">
+            <div className="text-xl font-semibold text-red-500">
+              Error
+            </div>
+            <div className="text-sm text-red-500">{error}</div>
+          </div>
         ) : (
           <div className="space-y-2">
             <div className="text-xl font-semibold text-gray-900">

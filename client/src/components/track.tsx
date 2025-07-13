@@ -518,7 +518,7 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                   className="w-full z-10 relative"
                 >
                   <a 
-                    href={`https://runescan.io/tx/${thorchainTxId}`}
+                    href={`https://thorchain.net/tx/${thorchainTxId}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-[#0052FF] to-[#0066FF] hover:from-[#0066FF] hover:to-[#0052FF] text-white font-semibold rounded-xl shadow-md transition-all duration-300"
@@ -555,9 +555,26 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
                   
                   <div className="flex flex-col gap-2">
                     <span className="text-sm text-gray-600 font-medium">Elapsed Time</span>
-                    <div className="flex items-center gap-2 text-gray-800 font-semibold">
-                      <Clock className="h-4 w-4 text-yellow-500" />
-                      <span>{formatElapsedTime(elapsedTime)}</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-gray-800 font-semibold">
+                        <Clock className="h-4 w-4 text-yellow-500" />
+                        <span>{formatElapsedTime(elapsedTime)}</span>
+                      </div>
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <a 
+                          href={`https://track.ninerealms.com/${thorchainTxId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-[#F2A900] to-[#F4B721] hover:from-[#F4B721] hover:to-[#F2A900] text-white text-sm font-medium rounded-lg shadow-sm transition-all duration-300"
+                        >
+                          Track Swap
+                          <ArrowUpRight className="h-3 w-3" />
+                        </a>
+                      </motion.div>
                     </div>
                   </div>
 
@@ -623,23 +640,7 @@ export function Track({ thorchainTxId, swapCountdown }: TrackProps) {
               </div>
             )}
 
-            {!isSwapFullyCompleted && (
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ duration: 0.2 }}
-              >
-                <a 
-                  href={`https://track.ninerealms.com/${thorchainTxId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-[#F2A900] to-[#F4B721] hover:from-[#F4B721] hover:to-[#F2A900] text-white font-semibold rounded-xl shadow-md transition-all duration-300"
-                >
-                  Track Swap
-                  <ArrowUpRight className="h-5 w-5" />
-                </a>
-              </motion.div>
-            )}
+
           </div>
         </CardContent>
       </Card>

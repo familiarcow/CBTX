@@ -38,7 +38,7 @@ const web3 = new Web3(ethereum as any);
 interface Web3ContextType {
   account: string | null;
   connect: () => Promise<void>;
-  disconnect: () => void;
+  disconnect: () => Promise<void>;
   provider: any;
   web3: Web3;
   chainId: number | null;
@@ -47,7 +47,7 @@ interface Web3ContextType {
 const Web3Context = createContext<Web3ContextType>({
   account: null,
   connect: async () => {},
-  disconnect: () => {},
+  disconnect: async () => {},
   provider: null,
   web3,
   chainId: null
@@ -142,10 +142,33 @@ export function Web3Provider({ children }: Web3ProviderProps) {
     }
   };
 
-  const disconnect = () => {
-    setAccount(null);
-    setChainId(null);
-    web3.eth.defaultAccount = undefined;
+  const disconnect = async () => {
+    try {
+      // Clear local state first
+      setAccount(null);
+      setChainId(null);
+      web3.eth.defaultAccount = undefined;
+      
+      // Properly disconnect from the provider
+      if (web3Provider && typeof web3Provider.close === 'function') {
+        await web3Provider.close();
+      } else if (web3Provider && typeof web3Provider.disconnect === 'function') {
+        await web3Provider.disconnect();
+      }
+      
+      // Remove event listeners to prevent memory leaks
+      if (web3Provider) {
+        web3Provider.removeAllListeners();
+      }
+      
+      console.log('Wallet disconnected successfully');
+    } catch (error) {
+      console.error('Error during wallet disconnect:', error);
+      // Still clear local state even if disconnect fails
+      setAccount(null);
+      setChainId(null);
+      web3.eth.defaultAccount = undefined;
+    }
   };
 
   return (

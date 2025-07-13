@@ -21,7 +21,7 @@ export default function Info() {
           transition={{ duration: 0.5 }}
           className="mt-8"
         >
-          <h1 className="text-3xl font-bold mb-6">About CBTX</h1>
+          <h1 className="text-3xl font-bold mb-6">About fromBase</h1>
           
           <div className="space-y-4 text-gray-700">
             <p>Created by  <a 
@@ -42,13 +42,13 @@ export default function Info() {
               >open source</a>.</p>
 
             <p>
-              CBTX uses <a 
+              fromBase uses <a 
                 href="https://thorchain.org" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:underline"
               >THORChain</a> as a swap provider. All swaps are provided by THORChain, 
-              this app is simply an interface to interact with the network. CBTX is not affiliated with THORChain or responsible for any issues that may occur.
+              this app is simply an interface to interact with the network. fromBase is not affiliated with THORChain or responsible for any issues that may occur.
 
             </p>
             

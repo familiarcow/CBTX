@@ -7,12 +7,12 @@ export const SUPPORTED_ASSETS = {
   },
   USDC: {
     symbol: 'USDC',
-    address: '0X833589FCD6EDB6E08F4C7C32D4F71B54BDA02913',
+    address: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
     decimals: 6
   },
   cbBTC: {
     symbol: 'cbBTC',
-    address: '0XCBB7C0000AB88B473B1F5AFD9EF808440EED33BF',
+    address: '0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf',
     decimals: 8
   }
 } as const;

@@ -5,6 +5,7 @@ import { ArrowUpRight } from "lucide-react";
 import type { QuoteResponse } from "@/lib/thorchain";
 import { calculateMinOutput } from "@/lib/thorchain";
 import { getAssetLogo, parseAssetId, getChainLogo } from "@/lib/asset-utils";
+import { SUPPORTED_ASSETS } from '@/lib/constants';
 
 // Import logos
 import btcLogo from '../../images/btc-logo.svg';
@@ -56,28 +57,9 @@ export function Quote({
       return 'BASE.ETH';
     
     return `BASE.${asset}-${SUPPORTED_ASSETS[asset].address.toUpperCase()}`;
-  };
-
-  // Define supported assets
-  const SUPPORTED_ASSETS = {
-    ETH: {
-      symbol: 'ETH',
-      address: '0x0000000000000000000000000000000000000000', // Native ETH
-      decimals: 18
-    },
-    USDC: {
-      symbol: 'USDC',
-      address: '0X833589FCD6EDB6E08F4C7C32D4F71B54BDA02913',
-      decimals: 6
-    },
-    cbBTC: {
-      symbol: 'cbBTC',
-      address: '0XCBB7C0000AB88B473B1F5AFD9EF808440EED33BF',
-      decimals: 8
-    }
-  } as const;
-
-  return (
+      };
+  
+    return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}

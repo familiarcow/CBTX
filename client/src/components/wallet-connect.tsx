@@ -44,7 +44,7 @@ export function WalletConnect() {
         >
           <Button 
             variant="outline" 
-            onClick={disconnect}
+            onClick={() => disconnect()}
             className="rounded-xl border-gray-200 hover:border-red-300 hover:bg-red-50 hover:text-red-600 transition-all duration-200"
           >
             Disconnect

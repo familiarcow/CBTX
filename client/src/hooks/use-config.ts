@@ -17,7 +17,7 @@ async function fetchConfig(): Promise<Config> {
     if (!apiKey) {
       console.error('No API key found in environment');
       // Fallback to hardcoded key for development
-      const fallbackKey = '86G8DMAAQNR15GHJZZ8X1EUSBZ6578NJMK';
+      const fallbackKey = 'DX2VTXXW393NDGKQREZG9UKR5GWSAJ9A7K';
       console.log('Using fallback API key');
       setApiKey(fallbackKey);
       return { basescanApiKey: fallbackKey };

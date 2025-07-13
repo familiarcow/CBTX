@@ -26,7 +26,7 @@ if (process.env.NODE_ENV !== 'production') {
   registerRoutes(app);
 
   setupVite(app, server).then(() => {
-    const PORT = process.env.PORT || 5000;
+    const PORT = process.env.PORT || 5001;
     server.listen(PORT, () => {
       log(`Development server running on port ${PORT}`);
     }).on('error', (err) => {

@@ -1,7 +1,7 @@
-# CBTX - cbBTC Exchange Documentation
+# fromBase Exchange Documentation
 
 ## Overview
-CBTX is a decentralized exchange application that allows users to swap between cbBTC and other assets on the Base network. The application provides a user-friendly interface for token swaps with real-time quotes and transaction management.
+fromBase is a decentralized exchange application that allows users to swap between cbBTC and other assets on the Base network. The application provides a user-friendly interface for token swaps with real-time quotes and transaction management.
 
 ## Architecture
 

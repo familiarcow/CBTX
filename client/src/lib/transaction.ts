@@ -117,8 +117,6 @@ export const handleTransaction = async ({
           account
         );
         
-        // Refresh balances after approval with delay
-        triggerBalanceRefresh();
       } catch (error) {
         // If error is "Sufficient allowance already exists", we can proceed
         if (!(error instanceof Error && error.message === 'Sufficient allowance already exists')) {

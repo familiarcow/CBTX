@@ -5,7 +5,7 @@ import { useWeb3 } from "@/lib/web3";
 import { LogOut } from "lucide-react";
 import { truncateAddress } from "@/lib/utils";
 import { useBasename } from "@/hooks/use-basename";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { refreshBalancesEvent } from "@/lib/transaction";
 
 // Import logos
@@ -23,6 +23,7 @@ export function Balances({ selectedAsset, onAssetSelect }: BalanceProps) {
   const { account, web3, disconnect } = useWeb3();
   const { basename, loading: basenameLoading } = useBasename(account as `0x${string}` | null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [loadingQueue, setLoadingQueue] = useState<Array<'ETH' | 'USDC' | 'cbBTC'>>([]);
   
   // Listen for the refresh-balances event
   useEffect(() => {
@@ -37,6 +38,46 @@ export function Balances({ selectedAsset, onAssetSelect }: BalanceProps) {
       window.removeEventListener('refresh-balances', handleRefreshBalances);
     };
   }, []);
+
+  // Sequential loading management
+  const [completedLoads, setCompletedLoads] = useState<Set<string>>(new Set());
+  const [canLoadNext, setCanLoadNext] = useState({
+    ETH: true,
+    USDC: false,
+    cbBTC: false
+  });
+
+  const handleLoadingComplete = useCallback((symbol: 'ETH' | 'USDC' | 'cbBTC') => {
+    setCompletedLoads(prev => {
+      const newSet = new Set(prev);
+      newSet.add(symbol);
+      
+      // Update what can load next
+      if (symbol === 'ETH') {
+        setCanLoadNext(prev => ({ ...prev, USDC: true }));
+      } else if (symbol === 'USDC') {
+        setCanLoadNext(prev => ({ ...prev, cbBTC: true }));
+      }
+      
+      return newSet;
+    });
+  }, []);
+
+  const handleEthSelect = useCallback(() => onAssetSelect('ETH'), [onAssetSelect]);
+  const handleUsdcSelect = useCallback(() => onAssetSelect('USDC'), [onAssetSelect]);
+  const handleCbBtcSelect = useCallback(() => onAssetSelect('cbBTC'), [onAssetSelect]);
+
+  // Reset loading states when account changes
+  useEffect(() => {
+    if (account) {
+      setCompletedLoads(new Set());
+      setCanLoadNext({
+        ETH: true,
+        USDC: false,
+        cbBTC: false
+      });
+    }
+  }, [account]);
 
   if (!account) return null;
   
@@ -90,24 +131,30 @@ export function Balances({ selectedAsset, onAssetSelect }: BalanceProps) {
               logo={ethLogo}
               chainLogo={baseLogo}
               isSelected={selectedAsset === 'ETH'}
-              onSelect={() => onAssetSelect('ETH')}
+              onSelect={handleEthSelect}
               refreshKey={refreshTrigger}
+              canLoad={canLoadNext.ETH}
+              onLoadingComplete={handleLoadingComplete}
             />
             <TokenBalance 
               symbol="USDC" 
               logo={usdcLogo}
               chainLogo={baseLogo}
               isSelected={selectedAsset === 'USDC'}
-              onSelect={() => onAssetSelect('USDC')}
+              onSelect={handleUsdcSelect}
               refreshKey={refreshTrigger}
+              canLoad={canLoadNext.USDC}
+              onLoadingComplete={handleLoadingComplete}
             />
             <TokenBalance 
               symbol="cbBTC" 
               logo={cbbtcLogo}
               chainLogo={baseLogo}
               isSelected={selectedAsset === 'cbBTC'}
-              onSelect={() => onAssetSelect('cbBTC')}
+              onSelect={handleCbBtcSelect}
               refreshKey={refreshTrigger}
+              canLoad={canLoadNext.cbBTC}
+              onLoadingComplete={handleLoadingComplete}
             />
           </CardContent>
         </Card>
