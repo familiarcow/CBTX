@@ -42,7 +42,7 @@ export async function setupVite(app: Express, server: Server) {
     plugins: [react()],
     envPrefix: 'VITE_',
     define: {
-      'import.meta.env.VITE_BASESCAN_API_KEY': JSON.stringify(process.env.BASESCAN_API_KEY)
+      'import.meta.env.VITE_BASESCAN_API_KEY': process.env.BASESCAN_API_KEY ? JSON.stringify(process.env.BASESCAN_API_KEY) : undefined
     }
   });
 

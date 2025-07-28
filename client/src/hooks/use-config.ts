@@ -14,8 +14,9 @@ async function fetchConfig(): Promise<Config> {
     // Get API key from environment
     const apiKey = import.meta.env.VITE_BASESCAN_API_KEY;
     
-    if (!apiKey) {
-      console.error('No API key found in environment');
+    // Check for valid API key (not undefined, null, empty string, or the string "undefined")
+    if (!apiKey || apiKey === 'undefined' || apiKey.trim() === '') {
+      console.error('No API key found in environment, apiKey value:', apiKey);
       // Fallback to hardcoded key for development
       const fallbackKey = 'DX2VTXXW393NDGKQREZG9UKR5GWSAJ9A7K';
       console.log('Using fallback API key');
@@ -25,7 +26,7 @@ async function fetchConfig(): Promise<Config> {
 
     // Set the API key
     setApiKey(apiKey);
-    console.log('API key set from environment');
+    console.log('API key set from environment successfully');
     
     return { basescanApiKey: apiKey };
   } catch (error) {
