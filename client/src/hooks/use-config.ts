@@ -11,7 +11,24 @@ async function fetchConfig(): Promise<Config> {
   console.log('Starting fetchConfig...');
   
   try {
-    // Get API key from environment
+    // First try to get API key from server API (for production)
+    try {
+      console.log('Fetching config from server API...');
+      const response = await fetch('/api/config');
+      if (response.ok) {
+        const serverConfig = await response.json();
+        if (serverConfig.basescanApiKey) {
+          setApiKey(serverConfig.basescanApiKey);
+          console.log('API key set from server API successfully');
+          return { basescanApiKey: serverConfig.basescanApiKey };
+        }
+      }
+      console.log('Server API did not provide API key, trying environment variable...');
+    } catch (serverError) {
+      console.log('Failed to fetch from server API, trying environment variable...', serverError);
+    }
+
+    // Fallback to environment variable (for development)
     const apiKey = import.meta.env.VITE_BASESCAN_API_KEY;
     
     // Check for valid API key (not undefined, null, empty string, or the string "undefined")
