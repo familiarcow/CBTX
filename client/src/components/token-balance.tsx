@@ -110,7 +110,12 @@ export function TokenBalance({
         return;
       }
 
-      // If config is not available, show a more helpful error
+      // Wait for config to load before proceeding
+      if (configLoading) {
+        return; // Still loading, don't do anything yet
+      }
+
+      // If config failed to load, show error
       if (!config) {
         setError('API key not configured');
         setHasLoaded(true);
@@ -171,7 +176,7 @@ export function TokenBalance({
     }
 
     fetchBalance();
-  }, [account, symbol, config, canLoad, refreshKey, onLoadingComplete]);
+  }, [account, symbol, config, configLoading, canLoad, refreshKey, onLoadingComplete]);
 
   // Reset hasLoaded when refreshKey changes
   useEffect(() => {
