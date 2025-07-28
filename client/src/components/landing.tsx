@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { WalletConnect } from "@/components/wallet-connect";
+import { FarcasterAuth } from "@/components/farcaster-auth";
 import { ArrowUpRight } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -85,7 +86,26 @@ export function Landing() {
             </span>
           </h1>
         </div>
-        <WalletConnect />
+        
+        <div className="space-y-4 w-full max-w-md">
+          <WalletConnect />
+          
+          <div className="flex items-center gap-4">
+            <div className="flex-1 h-px bg-gray-200"></div>
+            <span className="text-sm text-gray-500">or</span>
+            <div className="flex-1 h-px bg-gray-200"></div>
+          </div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex justify-center"
+          >
+            <FarcasterAuth />
+          </motion.div>
+        </div>
+        
         <div className="mt-4 text-gray-500 text-sm">
           <a
             href={`https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(window.location.href)}`}
