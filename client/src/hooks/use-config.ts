@@ -25,7 +25,7 @@ async function fetchConfig(): Promise<Config> {
       }
       console.log('Server API did not provide API key, trying environment variable...');
     } catch (serverError) {
-      console.log('Failed to fetch from server API, trying environment variable...', serverError);
+      console.log('Failed to fetch from server API, trying environment variable...');
     }
 
     // Fallback to environment variable (for development)
@@ -33,10 +33,9 @@ async function fetchConfig(): Promise<Config> {
     
     // Check for valid API key (not undefined, null, empty string, or the string "undefined")
     if (!apiKey || apiKey === 'undefined' || apiKey.trim() === '') {
-      console.error('No API key found in environment, apiKey value:', apiKey);
+      console.log('No API key found in environment, using fallback key');
       // Fallback to hardcoded key for development
       const fallbackKey = 'DX2VTXXW393NDGKQREZG9UKR5GWSAJ9A7K';
-      console.log('Using fallback API key');
       setApiKey(fallbackKey);
       return { basescanApiKey: fallbackKey };
     }
@@ -65,7 +64,7 @@ export function useConfig() {
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
-    data: query.data
+    hasApiKey: !!query.data?.basescanApiKey
   });
 
   return query;
