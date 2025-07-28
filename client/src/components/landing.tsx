@@ -86,23 +86,8 @@ export function Landing() {
           </h1>
         </div>
         
-        <div className="space-y-4 w-full max-w-md">
+        <div className="space-y-4 w-full max-w-md flex justify-center">
           <WalletConnect />
-          
-          <div className="flex items-center gap-4">
-            <div className="flex-1 h-px bg-gray-200"></div>
-            <span className="text-sm text-gray-500">or</span>
-            <div className="flex-1 h-px bg-gray-200"></div>
-          </div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex justify-center"
-          >
-            <WalletConnect />
-          </motion.div>
         </div>
         
         <div className="mt-4 text-gray-500 text-sm">
