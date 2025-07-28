@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useWeb3 } from "@/lib/web3";
-import { useFarcasterAuth } from "@/hooks/use-farcaster-auth";
 import { useToast } from "@/hooks/use-toast";
 import type { QuoteResponse } from "@/lib/thorchain";
 import { motion } from "framer-motion";
@@ -22,7 +21,6 @@ import { handleTransaction } from "@/lib/transaction";
 
 export default function Home() {
   const { account, web3 } = useWeb3();
-  const { user: farcasterUser } = useFarcasterAuth();
   const { toast } = useToast();
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [destinationAsset, setDestinationAsset] = useState<string>('BTC.BTC');
@@ -121,7 +119,7 @@ export default function Home() {
     }
   };
 
-  const isAuthenticated = account || farcasterUser;
+  const isAuthenticated = account;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -138,23 +136,7 @@ export default function Home() {
 
           {isAuthenticated && (
             <>
-              {farcasterUser && !account && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center"
-                >
-                  <p className="text-blue-800 font-medium mb-2">
-                    Welcome to fromBase.xyz, FID {farcasterUser.fid}! 
-                  </p>
-                  <p className="text-blue-600 text-sm mb-3">
-                    To perform swaps, you'll also need to connect your Coinbase Wallet for transaction signing.
-                  </p>
-                  <div className="flex justify-center">
-                    <WalletConnect />
-                  </div>
-                </motion.div>
-              )}
+
               
               <Balances 
                 selectedAsset={selectedAsset} 

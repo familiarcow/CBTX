@@ -6,7 +6,6 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Info from "@/pages/info";
 import { Web3Provider } from "@/lib/web3";
-import { sdk } from '@farcaster/miniapp-sdk';
 
 // Create a client with default options
 const queryClient = new QueryClient({
@@ -36,31 +35,7 @@ function App() {
     setIsAppReady(true);
   }, []);
 
-  useEffect(() => {
-    if (isAppReady) {
-      // Initialize Farcaster MiniApp SDK and hide splash screen after app is ready
-      const initializeMiniApp = async () => {
-        try {
-          // Small delay to ensure DOM is fully rendered
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          // Call ready() to hide the splash screen and show the app content
-          await sdk.actions.ready();
-          console.log('Farcaster MiniApp SDK ready() called successfully');
-        } catch (error) {
-          console.error('Failed to initialize Farcaster MiniApp:', error);
-          // Still call ready() even if there's an error to ensure the app shows
-          try {
-            await sdk.actions.ready();
-          } catch (retryError) {
-            console.error('Failed to call ready() on retry:', retryError);
-          }
-        }
-      };
 
-      initializeMiniApp();
-    }
-  }, [isAppReady]);
 
   return (
     <QueryClientProvider client={queryClient}>

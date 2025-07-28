@@ -1,7 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { WalletConnect } from "@/components/wallet-connect";
-import { FarcasterAuth } from "@/components/farcaster-auth";
 import { ArrowUpRight } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -102,7 +101,7 @@ export function Landing() {
             transition={{ delay: 0.2 }}
             className="flex justify-center"
           >
-            <FarcasterAuth />
+            <WalletConnect />
           </motion.div>
         </div>
         
