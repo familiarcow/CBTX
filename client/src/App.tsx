@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
+import BaseMiniApp from "@/pages/base-miniapp";
 import Info from "@/pages/info";
 import { Web3Provider } from "@/lib/web3";
 import { BaseMiniKitProvider } from "@/lib/base-minikit-provider";
@@ -19,9 +20,13 @@ const queryClient = new QueryClient({
 });
 
 function Router() {
+  // Check if we're running as a Mini App
+  const isMiniApp = typeof window !== 'undefined' && 
+    (window.parent !== window || window.location.search.includes('miniapp=true'));
+
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={isMiniApp ? BaseMiniApp : Home} />
       <Route path="/info" component={Info} />
       <Route component={NotFound} />
     </Switch>

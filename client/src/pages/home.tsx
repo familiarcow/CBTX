@@ -21,41 +21,8 @@ import { SupportedAsset, getAssetAddress } from "@/lib/constants";
 import { handleTransaction } from "@/lib/transaction";
 import { useWebhookNotifications } from "@/hooks/use-webhook-notifications";
 
-// Add Wagmi imports for Mini App detection
-import { useAccount } from 'wagmi';
-
-function useWagmiSafely() {
-  try {
-    const account = useAccount()
-    console.log('🔍 Wagmi useAccount result:', {
-      address: account.address,
-      isConnected: account.isConnected,
-      isConnecting: account.isConnecting,
-      isDisconnected: account.isDisconnected,
-      isReconnecting: account.isReconnecting,
-      status: account.status,
-      connector: account.connector?.name
-    });
-    
-    // Test if we can make RPC calls
-    if (account.isConnected && import.meta.env.DEV) {
-      console.log('🔍 Wagmi connected - testing RPC availability...')
-    }
-    
-    return { account, hasWagmi: true }
-  } catch (error) {
-    console.log('🔍 Wagmi not available:', error);
-    return { account: { address: null, isConnected: false, status: 'disconnected' }, hasWagmi: false }
-  }
-}
-
 export default function Home() {
-  // Check Mini App environment first
-  const isMiniApp = typeof window !== 'undefined' && 
-    (window.parent !== window || window.location.search.includes('miniapp=true'));
-  
-  // Get wallet states from both systems
-  const { account: wagmiAccount, hasWagmi } = useWagmiSafely();
+  // Regular web app uses Web3 provider
   const legacyWallet = useWeb3();
   
   const configQuery = useConfig();
@@ -64,26 +31,10 @@ export default function Home() {
   // Initialize webhook notifications
   const { triggerTestNotification, handleWebhookEvent } = useWebhookNotifications();
 
-  // Clean authentication logic based on environment
-  const isAuthenticated = isMiniApp 
-    ? (hasWagmi && wagmiAccount.isConnected && !!wagmiAccount.address)
-    : !!legacyWallet.account;
-    
-  const connectedAddress = isMiniApp ? wagmiAccount.address : legacyWallet.account;
+  // Simple authentication logic for regular web app
+  const isAuthenticated = !!legacyWallet.account;
+  const connectedAddress = legacyWallet.account;
   const web3Instance = legacyWallet.web3;
-
-  // Debug logging
-  console.log('🔍 Authentication Debug:', {
-    isMiniApp,
-    authMode: isMiniApp ? 'Mini App (Wagmi)' : 'Regular Browser (Web3)',
-    hasWagmi,
-    wagmiConnected: wagmiAccount.isConnected,
-    wagmiAddress: wagmiAccount.address,
-    legacyAccount: legacyWallet.account,
-    web3Available: !!web3Instance,
-    isAuthenticated,
-    connectedAddress
-  });
 
   const { toast } = useToast();
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
@@ -104,10 +55,9 @@ export default function Home() {
     console.log('Account changed:', {
       hasAccount: !!connectedAddress,
       accountAddress: connectedAddress,
-      timestamp: new Date().toISOString(),
-      mode: isMiniApp ? 'wagmi' : 'legacy'
+      timestamp: new Date().toISOString()
     });
-  }, [connectedAddress, isMiniApp]);
+  }, [connectedAddress]);
 
   // Add effect for auto-scrolling and collapsing when quote is received
   useEffect(() => {
@@ -151,16 +101,7 @@ export default function Home() {
   };
 
   const handleTransactionSubmit = async () => {
-    console.log('🔍 Transaction Submit Debug:', {
-      hasQuote: !!quote,
-      hasWagmi,
-      hasWeb3: !!web3Instance,
-      hasConnectedAddress: !!connectedAddress,
-      connectedAddress
-    });
-    
-    // In Mini App mode, we don't have web3 but we have the connected address
-    if (!quote || (!isMiniApp && !web3Instance) || !connectedAddress) {
+    if (!quote || !web3Instance || !connectedAddress) {
       console.log('❌ Transaction submit blocked - missing requirements');
       return;
     }
@@ -195,19 +136,6 @@ export default function Home() {
       setIsApproving(false);
     }
   };
-
-  // Debug logging
-  useEffect(() => {
-    console.log('Wallet State Debug:', {
-      hasWagmi,
-      wagmiConnected: wagmiAccount.isConnected,
-      wagmiAddress: wagmiAccount.address,
-      legacyAccount: legacyWallet.account,
-      web3Available: !!web3Instance,
-      isAuthenticated,
-      connectedAddress
-    });
-  }, [hasWagmi, wagmiAccount.isConnected, wagmiAccount.address, legacyWallet.account, web3Instance, isAuthenticated, connectedAddress]);
 
   return (
     <motion.div 
@@ -257,25 +185,6 @@ export default function Home() {
 
       {isAuthenticated && (
         <div className="container mx-auto px-4 py-6 flex-grow">
-          {/* Debug information */}
-          <div className="mb-4 p-4 bg-yellow-100 border border-yellow-400 rounded">
-            <h3 className="font-bold text-yellow-800">🔍 Debug Info:</h3>
-            <div className="text-sm text-yellow-700">
-              <p>• Mini App Mode: {isMiniApp ? '✅' : '❌'}</p>
-              <p>• Has Wagmi: {hasWagmi ? '✅' : '❌'}</p>
-              <p>• Wagmi Connected: {wagmiAccount.isConnected ? '✅' : '❌'}</p>
-              <p>• Wagmi Address: {wagmiAccount.address || 'None'}</p>
-              <p>• Wagmi Status: {hasWagmi ? (wagmiAccount.status || 'Unknown') : 'N/A'}</p>
-              <p>• Legacy Account: {legacyWallet.account || 'None'}</p>
-              <p>• Web3 Available: {web3Instance ? '✅' : '❌'}</p>
-              <p>• Authentication Mode: {isMiniApp ? 'Mini App (Wagmi)' : 'Regular Browser (Web3)'}</p>
-              <p>• Is Authenticated: {isAuthenticated ? '✅' : '❌'}</p>
-              <p>• Connected Address: {connectedAddress || 'None'}</p>
-              <p><strong>🎯 Should Show Swap Interface: {isAuthenticated ? '✅ YES' : '❌ NO'}</strong></p>
-              <p>• Window Parent: {typeof window !== 'undefined' && window.parent !== window ? 'Different (Mini App)' : 'Same (Browser)'}</p>
-            </div>
-          </div>
-
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

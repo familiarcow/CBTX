@@ -8,7 +8,7 @@ import { SwapPanel } from "@/components/swap-panel";
 import { Quote } from "@/components/quote";
 import { Track } from "@/components/track";
 import { ToastController } from "@/components/toast-controller";
-import { useMiniKit } from "@/lib/minikit-provider";
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useToast } from "@/hooks/use-toast";
 import { handleTransaction } from "@/lib/transaction";
 import type { QuoteResponse } from "@/lib/thorchain";
@@ -19,7 +19,8 @@ import baseLogo from '../../images/base-logo.svg';
 import btcLogo from '../../images/btc-logo.svg';
 
 function BaseWalletConnect() {
-  const { isConnected, address, connect } = useMiniKit();
+  const { isConnected, address } = useAccount();
+  const { connect, connectors } = useConnect();
 
   if (isConnected && address) {
     return (
@@ -33,6 +34,14 @@ function BaseWalletConnect() {
       </div>
     );
   }
+
+  const handleConnect = () => {
+    // Use the first available connector (injected wallet for Base App)
+    const connector = connectors[0];
+    if (connector) {
+      connect({ connector });
+    }
+  };
 
   return (
     <Card className="border-0 shadow-lg rounded-2xl overflow-hidden bg-white/70 backdrop-blur-sm mb-6">
@@ -61,7 +70,7 @@ function BaseWalletConnect() {
           className="w-full max-w-md"
         >
           <Button
-            onClick={connect}
+            onClick={handleConnect}
             className="w-full bg-[#0052FF] hover:bg-[#0039B3] text-white font-semibold py-6 px-8 rounded-xl shadow-lg transition-all duration-300"
           >
             Connect Base Wallet
@@ -73,7 +82,7 @@ function BaseWalletConnect() {
 }
 
 export default function BaseMiniApp() {
-  const { address, web3 } = useMiniKit();
+  const { address } = useAccount();
   const { toast } = useToast();
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [destinationAsset, setDestinationAsset] = useState<string>('BTC.BTC');
@@ -136,14 +145,14 @@ export default function BaseMiniApp() {
   };
 
   const handleSwapTransaction = async () => {
-    if (!quote || !web3 || !address) return;
+    if (!quote || !address) return;
 
     try {
       setIsApproving(true);
       setIsSending(true);
 
       await handleTransaction({
-        web3,
+        web3: null, // In Wagmi setup, this is handled differently
         account: address,
         quote,
         selectedAsset,
