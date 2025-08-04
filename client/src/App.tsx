@@ -40,6 +40,15 @@ function App() {
   const isMiniApp = typeof window !== 'undefined' && 
     (window.parent !== window || window.location.search.includes('miniapp=true'));
 
+  // Show loading state briefly to prevent flash during environment detection
+  if (!isAppReady) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-[#0052FF] font-semibold">Loading...</div>
+      </div>
+    );
+  }
+
   // Following Base docs: "Wrap your existing application in <MiniKitProvider>"
   if (isMiniApp) {
     return (

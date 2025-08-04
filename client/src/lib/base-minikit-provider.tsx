@@ -36,13 +36,24 @@ export function BaseMiniKitProvider({ children }: BaseMiniKitProviderProps) {
       try {
         // Check if we're in a Mini App environment
         if (typeof window !== 'undefined' && window.parent !== window) {
-          console.log('Initializing Base Mini App...')
+          if (import.meta.env.DEV) {
+            console.log('🚀 Initializing Base Mini App...')
+            console.log('Environment details:', {
+              userAgent: navigator.userAgent,
+              inIframe: window.parent !== window,
+              location: window.location.href
+            })
+          }
           // Call ready() to indicate the app is loaded
           await sdk.actions.ready()
-          console.log('Base Mini App ready!')
+          if (import.meta.env.DEV) {
+            console.log('✅ Base Mini App ready!')
+          }
+        } else if (import.meta.env.DEV) {
+          console.log('🌐 Running in regular browser mode')
         }
       } catch (error) {
-        console.error('Failed to initialize Mini App:', error)
+        console.error('❌ Failed to initialize Mini App:', error)
       }
     }
 
