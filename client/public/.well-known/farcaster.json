@@ -1,20 +1,25 @@
 {
+  "accountAssociation": {
+    "header": "eyJmaWQiOjI0Nzg1MywidHlwZSI6ImF1dGgiLCJrZXkiOiIweDI0NGFmODUzMGNBQjY3RDM4MGRCRjc3YTY1NTBjOWUyQTIxNjYzMzkifQ",
+    "payload": "eyJkb21haW4iOiJmcm9tYmFzZS54eXoifQ",
+    "signature": "r8XeKFDBy9NkdEXYzsm2h/XW5OWsy9UPcs3MKcTXHuljjcLadDbYi5LArjO4mqSFgBDdtEeraVBJ6AfE9AIQeBw="
+  },
   "frame": {
     "version": "1",
     "name": "FromBase.xyz",
     "subtitle": "Swap Base to Bitcoin",
-    "description": "Convert your Base chain assets to Bitcoin, Ethereum, and other cryptocurrencies using THORChain's decentralized exchange. Seamlessly swap ETH, USDC, and cbBTC from Base to any supported blockchain.",
+    "description": "Convert Base assets to Bitcoin instantly. Swap ETH, USDC, and cbBTC from Base to Bitcoin and other chains via THORChain's DEX.",
     "iconUrl": "https://frombase.xyz/images/frombase-logo.png",
     "homeUrl": "https://frombase.xyz",
     "splashImageUrl": "https://frombase.xyz/images/frombase-logo.png", 
     "splashBackgroundColor": "#0052FF",
     "heroImageUrl": "https://frombase.xyz/images/frombase-logo.png",
-    "tagline": "Swap from Base to any blockchain",
+    "tagline": "From Base to Bitcoin",
     "screenshotUrls": [
       "https://frombase.xyz/images/frombase-logo.png"
     ],
     "primaryCategory": "finance",
-    "tags": ["defi", "swap", "cross-chain", "thorchain", "base"],
+    "tags": ["defi", "swap", "cross-chain", "thorchain", "base", "bitcoin"],
     "noindex": true
   }
 } 

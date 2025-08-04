@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
-import { BaseWalletConnect } from "@/components/base-wallet-connect";
+import { AdaptiveWalletConnect } from "@/components/adaptive-wallet-connect";
 import { ArrowUpRight } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -87,7 +87,7 @@ export function Landing() {
         </div>
         
         <div className="w-full max-w-md">
-          <BaseWalletConnect />
+          <AdaptiveWalletConnect />
         </div>
         
         <div className="mt-4 text-gray-500 text-sm">
