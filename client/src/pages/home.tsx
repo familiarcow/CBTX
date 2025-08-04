@@ -21,13 +21,32 @@ import { SupportedAsset, getAssetAddress } from "@/lib/constants";
 import { handleTransaction } from "@/lib/transaction";
 import { useWebhookNotifications } from "@/hooks/use-webhook-notifications";
 
+// Add Wagmi imports for Mini App detection
+import { useAccount } from 'wagmi';
+
+function useWagmiSafely() {
+  try {
+    const account = useAccount()
+    return { account, hasWagmi: true }
+  } catch (error) {
+    return { account: { address: null, isConnected: false }, hasWagmi: false }
+  }
+}
+
 export default function Home() {
   const { account, web3, provider, chainId, connect } = useWeb3();
   const configQuery = useConfig();
   const usdValues = useUSDValues();
   
+  // Check both Wagmi and legacy wallet states
+  const { account: wagmiAccount, hasWagmi } = useWagmiSafely();
+  
   // Initialize webhook notifications
   const { triggerTestNotification, handleWebhookEvent } = useWebhookNotifications();
+
+  // Check authentication from both Wagmi (Mini App) and legacy Web3 (regular browser)
+  const isAuthenticated = hasWagmi ? wagmiAccount.isConnected : !!account;
+  const connectedAddress = hasWagmi ? wagmiAccount.address : account;
 
   const { toast } = useToast();
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
@@ -46,11 +65,12 @@ export default function Home() {
   // Add effect to track account changes
   useEffect(() => {
     console.log('Account changed:', {
-      hasAccount: !!account,
-      accountAddress: account,
+      hasAccount: !!connectedAddress,
+      accountAddress: connectedAddress,
       timestamp: new Date().toISOString(),
+      mode: hasWagmi ? 'wagmi' : 'legacy'
     });
-  }, [account]);
+  }, [connectedAddress, hasWagmi]);
 
   // Add effect for auto-scrolling and collapsing when quote is received
   useEffect(() => {
@@ -94,7 +114,8 @@ export default function Home() {
   };
 
   const handleTransactionSubmit = async () => {
-    if (!quote || !web3 || !account) return;
+    // In Mini App mode, we don't have web3 but we have the connected address
+    if (!quote || (!hasWagmi && !web3) || !connectedAddress) return;
 
     try {
       setIsSending(true);
@@ -103,7 +124,7 @@ export default function Home() {
 
       await handleTransaction({
         web3,
-        account,
+        account: connectedAddress,
         quote,
         selectedAsset,
         toast,
@@ -127,7 +148,18 @@ export default function Home() {
     }
   };
 
-  const isAuthenticated = account;
+  // Debug logging
+  useEffect(() => {
+    console.log('Wallet State Debug:', {
+      hasWagmi,
+      wagmiConnected: wagmiAccount.isConnected,
+      wagmiAddress: wagmiAccount.address,
+      legacyAccount: account,
+      web3Available: !!web3,
+      isAuthenticated,
+      connectedAddress
+    });
+  }, [hasWagmi, wagmiAccount.isConnected, wagmiAccount.address, account, web3, isAuthenticated, connectedAddress]);
 
   return (
     <motion.div 
@@ -175,7 +207,7 @@ export default function Home() {
 
       {!isAuthenticated && <Landing />}
 
-      {isAuthenticated && web3 && (
+      {isAuthenticated && (hasWagmi || web3) && (
         <div className="container mx-auto px-4 py-6 flex-grow">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
